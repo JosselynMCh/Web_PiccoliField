@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Piccoli Field - Acceso al Panel de Administración</title>
+  <link rel="icon" type="image/webp" href="assets/images/logopicolli.webp">
+
+  <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#2B170F',
+              chocolate: '#4A2B1C',
+              gold: '#C99A32',
+              cream: '#F3E4C7',
+              beige: '#D9C09A',
+              caramel: '#B9783E',
+              ivory: '#FFF9EF',
+              fondo: '#FBF6EE'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-brand-fondo text-brand-dark min-h-screen flex items-center justify-center p-4 selection:bg-brand-gold selection:text-white">
+
+  <div class="max-w-md w-full glass-card p-8 sm:p-10 shadow-2xl border border-brand-beige/50 relative">
+    
+    <!-- Encabezado con Identidad Piccoli -->
+    <div class="text-center mb-8">
+      <div class="w-24 h-24 mx-auto mb-4 flex items-center justify-center rounded-2xl bg-brand-ivory p-2 shadow-sm border border-brand-beige/40">
+        <img src="assets/images/logopicolli.webp" alt="Piccoli Cocktail" class="max-h-full max-w-full object-contain">
+      </div>
+      <h1 class="text-2xl font-black text-brand-dark tracking-tight">PiccoliField</h1>
+      <p class="text-xs font-bold text-brand-caramel uppercase tracking-widest mt-1">Panel Web del Administrador</p>
+      
+      <!-- Badge de restricción obligatoria -->
+      <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs">
+        <i class="fa-solid fa-lock text-[11px] text-amber-700"></i>
+        <span>Exclusivo: Rol ADMINISTRADOR</span>
+      </div>
+    </div>
+
+    <!-- Banner de Notificación / Errores -->
+    <div id="login-alert" class="hidden mb-5 p-3.5 rounded-xl text-xs font-semibold flex items-start gap-3 transition-all duration-300">
+      <i id="login-alert-icon" class="fa-solid fa-circle-exclamation text-base mt-0.5"></i>
+      <span id="login-alert-msg" class="leading-relaxed"></span>
+    </div>
+
+    <!-- Formulario de Acceso -->
+    <form id="form-login" class="space-y-4" novalidate>
+      <div>
+        <label for="correo" class="block text-xs font-bold text-stone-700 uppercase tracking-wide mb-1.5">
+          Correo Electrónico
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-stone-400">
+            <i class="fa-regular fa-envelope text-sm"></i>
+          </span>
+          <input type="email" id="correo" name="correo" required
+            placeholder="correo del administrador" autocomplete="username"
+            class="w-full pl-10 pr-3 py-2.5 text-xs rounded-xl border border-stone-300 bg-white focus:outline-none focus:ring-2 focus:ring-brand-gold focus:border-transparent transition shadow-xs">
+        </div>
+      </div>
+
+      <div>
+        <label for="password" class="block text-xs font-bold text-stone-700 uppercase tracking-wide mb-1.5">
+          Contraseña
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-stone-400">
+            <i class="fa-solid fa-lock text-sm"></i>
+          </span>
+          <input type="password" id="password" name="password" required
+            placeholder="••••••••" autocomplete="current-password"
+            class="w-full pl-10 pr-10 py-2.5 text-xs rounded-xl border border-stone-300 bg-white focus:outline-none focus:ring-2 focus:ring-brand-gold focus:border-transparent transition shadow-xs">
+          <button type="button" id="btn-toggle-pwd" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-stone-400 hover:text-stone-600">
+            <i class="fa-regular fa-eye text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button type="submit" id="btn-submit"
+          class="w-full py-3 px-4 rounded-xl bg-brand-chocolate hover:bg-brand-dark text-white font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+          <span>Ingresar al Panel</span>
+          <i class="fa-solid fa-arrow-right text-xs"></i>
+        </button>
+      </div>
+    </form>
+
+    <p class="mt-6 pt-5 border-t border-stone-200/80 text-[10px] text-stone-400 text-center">
+      Conectado a la API REST de PiccoliField con JWT. Acceso exclusivo para usuarios con rol ADMINISTRADOR.
+    </p>
+  </div>
+
+  </div>
+
+  <!-- Script modular de login -->
+  <script type="module">
+    import { AuthService } from './js/auth.js';
+
+    if (AuthService.isAuthenticated()) window.location.href = 'dashboard.html#supervision';
+
+    const form = document.getElementById('form-login');
+    const inputCorreo = document.getElementById('correo');
+    const inputPassword = document.getElementById('password');
+    const btnSubmit = document.getElementById('btn-submit');
+    const alertBox = document.getElementById('login-alert');
+    const alertMsg = document.getElementById('login-alert-msg');
+    const alertIcon = document.getElementById('login-alert-icon');
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'unauthorized') showAlert('Su sesión expiró o no es válida. Ingrese nuevamente.', 'warning');
+    else if (params.get('msg') === 'logged_out') showAlert('Sesión cerrada correctamente.', 'info');
+
+    document.getElementById('btn-toggle-pwd').addEventListener('click', (e) => {
+      const isPwd = inputPassword.type === 'password';
+      inputPassword.type = isPwd ? 'text' : 'password';
+      e.currentTarget.innerHTML = `<i class="fa-regular ${isPwd ? 'fa-eye-slash' : 'fa-eye'} text-xs"></i>`;
+    });
+
+    function showAlert(msg, type = 'error') {
+      alertBox.className = 'mb-5 p-3.5 rounded-xl text-xs font-semibold flex items-start gap-3 border ' + ({
+        error: 'bg-rose-50 text-rose-900 border-rose-300',
+        warning: 'bg-amber-50 text-amber-900 border-amber-300',
+        info: 'bg-blue-50 text-blue-900 border-blue-300'
+      }[type]);
+      alertIcon.className = 'fa-solid text-base mt-0.5 ' + (type === 'info' ? 'fa-circle-info' : 'fa-triangle-exclamation');
+      alertMsg.textContent = msg;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.classList.add('hidden');
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Verificando con el servidor...';
+      try {
+        await AuthService.login(inputCorreo.value, inputPassword.value);
+        window.location.href = 'dashboard.html#supervision';
+      } catch (err) {
+        showAlert(err.message || 'No se pudo iniciar sesión.', 'error');
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<span>Ingresar al Panel</span> <i class="fa-solid fa-arrow-right text-xs"></i>';
+      }
+    });
+  </script>
+</body>
+</html>

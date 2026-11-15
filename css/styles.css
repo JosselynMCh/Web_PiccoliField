@@ -1,0 +1,157 @@
+/* ========================================================
+   PICCOLI FIELD - PANEL WEB DEL ADMINISTRADOR
+   Identidad visual: Café Profundo (#2B170F), Chocolate (#4A2B1C),
+   Dorado Premium (#C99A32), Crema Vainilla (#F3E4C7),
+   Marfil Suave (#FFF9EF), Caramelo (#B9783E).
+   ======================================================== */
+
+:root {
+  --color-cafe-profundo: #2B170F;
+  --color-chocolate: #4A2B1C;
+  --color-dorado-premium: #C99A32;
+  --color-dorado-hover: #b38424;
+  --color-crema-vainilla: #F3E4C7;
+  --color-beige-licor: #D9C09A;
+  --color-caramelo: #B9783E;
+  --color-marfil-suave: #FFF9EF;
+  --color-fondo: #FBF6EE;
+
+  --color-status-ontime: #2e7d32;
+  --color-status-ontime-bg: #e8f5e9;
+  --color-status-late: #ef6c00;
+  --color-status-late-bg: #fff3e0;
+  --color-status-absent: #c62828;
+  --color-status-absent-bg: #ffebee;
+  --color-status-unmarked: #757575;
+  --color-status-unmarked-bg: #eeeeee;
+
+  --shadow-subtle: 0 4px 20px -2px rgba(43, 23, 15, 0.06), 0 2px 6px -1px rgba(43, 23, 15, 0.04);
+  --shadow-elevated: 0 10px 30px -4px rgba(43, 23, 15, 0.12), 0 4px 10px -2px rgba(43, 23, 15, 0.06);
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--color-fondo);
+  color: var(--color-cafe-profundo);
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1ebd9;
+}
+::-webkit-scrollbar-thumb {
+  background: #c0a884;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-caramelo);
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(217, 192, 154, 0.4);
+  box-shadow: var(--shadow-subtle);
+  border-radius: 1rem;
+  transition: all 0.25s ease-in-out;
+}
+
+.glass-card:hover {
+  border-color: rgba(201, 154, 50, 0.45);
+  box-shadow: var(--shadow-elevated);
+}
+
+/* KPI Card gradient accents */
+.kpi-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-dorado-premium), var(--color-caramelo));
+}
+
+/* Pulse animation for Live status */
+@keyframes live-pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(76, 175, 80, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+}
+
+.pulse-badge {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: #2e7d32;
+  animation: live-pulse 2s infinite;
+}
+
+/* Watermark Container for Evidence Photos */
+.watermark-container {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  border-radius: 0.75rem;
+}
+
+.watermark-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(43, 23, 15, 0.92) 0%, rgba(43, 23, 15, 0.6) 70%, transparent 100%);
+  padding: 8px 10px;
+  color: #FFF9EF;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.sha256-badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 9px;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(201, 154, 50, 0.4);
+  color: #F3E4C7;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Leaflet Cluster Overrides */
+.marker-cluster-small {
+  background-color: rgba(201, 154, 50, 0.6);
+}
+.marker-cluster-small div {
+  background-color: rgba(74, 43, 28, 0.9);
+  color: #FFF9EF;
+  font-weight: bold;
+}
+.marker-cluster-medium {
+  background-color: rgba(185, 120, 62, 0.6);
+}
+.marker-cluster-medium div {
+  background-color: rgba(43, 23, 15, 0.95);
+  color: #FFF9EF;
+  font-weight: bold;
+}

@@ -1,0 +1,21 @@
+{
+  "name": "piccoli-field-web",
+  "version": "1.0.0",
+  "description": "Panel Web de Supervisión y Administración para Piccoli Field",
+  "scripts": {
+    "dev": "python server.py",
+    "start": "python server.py",
+    "server:python": "python server.py"
+  },
+  "keywords": [
+    "piccoli",
+    "field",
+    "supervision",
+    "dashboard",
+    "jwt",
+    "polling",
+    "leaflet"
+  ],
+  "author": "Equipo Piccoli Field",
+  "license": "MIT"
+}
