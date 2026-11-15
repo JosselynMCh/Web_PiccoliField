@@ -45,8 +45,8 @@ class Router {
     });
     const title = document.getElementById('topbar-page-title');
     if (title) title.textContent = ROUTES[route][0];
-    document.getElementById('app-sidebar')?.classList.add('hidden');
-    document.getElementById('app-sidebar')?.classList.remove('fixed', 'inset-y-0', 'left-0');
+    document.getElementById('app-sidebar')?.classList.add('-translate-x-full');
+    document.getElementById('sidebar-backdrop')?.classList.add('hidden');
 
     container.innerHTML = '';
     try {

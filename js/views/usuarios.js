@@ -34,7 +34,7 @@ function frame() {
   if (root.querySelector('#us-body')) return;
   root.innerHTML = `${pageHeader('Personal y Dispositivos', 'Directorio del personal de campo con rol, sede, meta mensual, rendimiento y estado de asistencia. Reasigne a un punto de venta desde la ficha.', `<button id="us-refresh" class="${btnGhost}"><i class="fa-solid fa-rotate"></i> Actualizar</button>`)}
     <div id="us-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4"></div>
-    <div class="flex flex-wrap gap-2 mb-3"><input id="us-q" class="${inputCls} !w-60" placeholder="Buscar por nombre, correo o sede..."><select id="us-rol" class="${inputCls} !w-44"><option value="">Todos los roles</option><option>ADMINISTRADOR</option><option>PROMOTOR</option><option>IMPULSADOR</option><option>TRABAJADOR</option></select></div>
+    <div class="flex flex-wrap gap-2 mb-3"><input id="us-q" class="${inputCls} sm:w-60" placeholder="Buscar por nombre, correo o sede..."><select id="us-rol" class="${inputCls} sm:w-44"><option value="">Todos los roles</option><option>ADMINISTRADOR</option><option>PROMOTOR</option><option>IMPULSADOR</option><option>TRABAJADOR</option></select></div>
     <div id="us-body"></div>
     <div class="mt-4 p-3 rounded-xl bg-stone-100 text-[11px] text-stone-600"><i class="fa-solid fa-circle-info mr-1"></i> La API actual no expone altas/ediciones de usuarios ni aprobación de dispositivos (solo el propio usuario actualiza su dispositivo con <code>PUT /dispositivo</code>). Este directorio se construye con <code>/supervision/impulsadores</code>, <code>/asistencias/colaboradores</code> y <code>/supervision/vendedores</code>.</div>`;
   root.querySelector('#us-refresh').onclick = () => load();
@@ -63,7 +63,7 @@ async function ficha(p) {
   openModal(modalHeader(esc(p.nombre), `${esc(p.rol)} · ${esc(p.correo)}`) + `
     <div class="p-5 space-y-4 text-xs">
       <div class="flex items-center gap-3">${avatar(p.nombre, { auth: p.id ? `supervision/impulsadores/${p.id}/foto` : '', size: 'w-14 h-14' })}<div><div class="text-sm font-black">${esc(p.nombre)}</div><div class="text-stone-500">${esc(p.local || 'Sin sede asignada')}</div></div></div>
-      <div class="grid grid-cols-3 gap-3"><div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Meta</div><div class="text-lg font-black">${p.meta || '—'}</div></div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Meta</div><div class="text-lg font-black">${p.meta || '—'}</div></div>
         <div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Vendido</div><div class="text-lg font-black">${num(pick(d, 'cantidadVendida', 'monto_vendido'), num(p.vendido))}</div></div>
         <div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Logro</div><div class="text-lg font-black">${d.porcentaje_logro != null ? Math.round(d.porcentaje_logro) + '%' : '—'}</div></div></div>
       <div><h4 class="font-black mb-2">Últimos turnos</h4>${hist.length ? `<div class="max-h-44 overflow-y-auto border border-stone-200 rounded-xl divide-y divide-stone-100">${hist.slice(0, 30).map(h => `<div class="p-2.5 flex justify-between">${badge(h.tipo || '—', h.tipo === 'INGRESO' ? 'info' : 'neutral')}<span>${fmtDateTime(h.fecha_hora)}</span></div>`).join('')}</div>` : emptyHTML('Sin marcaciones registradas')}</div>

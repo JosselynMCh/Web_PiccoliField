@@ -38,10 +38,10 @@ function frame() {
         <button data-tab="colab" class="px-3 py-1.5 rounded-lg">Colaboradores</button>
         <button data-tab="mapa" class="px-3 py-1.5 rounded-lg">Mapa</button>
       </div>
-      <input id="f-q" class="${inputCls} !w-52" placeholder="Buscar persona...">
-      <select id="f-estado" class="${inputCls} !w-40"><option value="">Todos los estados</option><option value="A_TIEMPO">Puntual</option><option value="TARDANZA">Tardanza</option><option value="FALTA">Falta</option></select>
-      <select id="f-sede" class="${inputCls} !w-52"><option value="">Todas las zonas / sedes</option></select>
-      <input id="f-fecha" type="date" class="${inputCls} !w-40">
+      <input id="f-q" class="${inputCls} sm:w-52" placeholder="Buscar persona...">
+      <select id="f-estado" class="${inputCls} sm:w-40"><option value="">Todos los estados</option><option value="A_TIEMPO">Puntual</option><option value="TARDANZA">Tardanza</option><option value="FALTA">Falta</option></select>
+      <select id="f-sede" class="${inputCls} sm:w-52"><option value="">Todas las zonas / sedes</option></select>
+      <input id="f-fecha" type="date" class="${inputCls} sm:w-40">
       <button id="f-clear" class="${btnGhost}">Limpiar</button>
     </div>
     <div id="as-body"></div>`;
@@ -111,7 +111,7 @@ const observada = (r) => r.precision !== undefined && num(r.precision) > MAX_ACC
 
 function drawMap(body, rows) {
   const withGeo = rows.filter(r => validCoord(r.lat, r.lng));
-  body.innerHTML = card(`<div class="p-3 text-[11px] text-stone-500">${withGeo.length} de ${rows.length} marcaciones con ubicación. Círculo = rango de asistencia (geocerca) de la sede.</div><div id="as-map" class="h-[520px] rounded-b-2xl"></div>`);
+  body.innerHTML = card(`<div class="p-3 text-[11px] text-stone-500">${withGeo.length} de ${rows.length} marcaciones con ubicación. Círculo = rango de asistencia (geocerca) de la sede.</div><div id="as-map" class="h-[360px] sm:h-[520px] rounded-b-2xl"></div>`);
   map?.remove();
   map = L.map('as-map').setView(CONFIG.MAP_DEFAULT_CENTER, CONFIG.MAP_DEFAULT_ZOOM);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);

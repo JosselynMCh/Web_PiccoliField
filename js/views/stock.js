@@ -32,9 +32,9 @@ function frame() {
     <div id="st-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4"></div>
     <div id="st-rank" class="mb-4"></div>
     <div class="flex flex-wrap gap-2 mb-3">
-      <input id="st-q" class="${inputCls} !w-56" placeholder="Buscar producto o punto de venta...">
-      <select id="st-estado" class="${inputCls} !w-40"><option value="">Todos los estados</option><option>PENDIENTE</option><option>ATENDIDA</option><option>IGNORADA</option></select>
-      <select id="st-nivel" class="${inputCls} !w-40"><option value="">Toda severidad</option><option>ALTA</option><option>MEDIA</option><option>BAJA</option></select>
+      <input id="st-q" class="${inputCls} sm:w-56" placeholder="Buscar producto o punto de venta...">
+      <select id="st-estado" class="${inputCls} sm:w-40"><option value="">Todos los estados</option><option>PENDIENTE</option><option>ATENDIDA</option><option>IGNORADA</option></select>
+      <select id="st-nivel" class="${inputCls} sm:w-40"><option value="">Toda severidad</option><option>ALTA</option><option>MEDIA</option><option>BAJA</option></select>
     </div><div id="st-body"></div>`;
   root.querySelector('#st-refresh').onclick = () => load();
   root.querySelector('#st-q').oninput = debounce(e => { f.q = e.target.value.toLowerCase(); draw(); });

@@ -46,10 +46,10 @@ function frame() {
   root.innerHTML = `${pageHeader('Incidencias en Campo', 'Consulte incidencias por punto de venta, tipo y severidad; cambie su estado y deje comentarios de seguimiento.', `<button id="in-refresh" class="${btnGhost}"><i class="fa-solid fa-rotate"></i> Actualizar</button>`)}
     <div id="in-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4"></div>
     <div class="flex flex-wrap gap-2 mb-3">
-      <input id="in-q" class="${inputCls} !w-52" placeholder="Buscar PDV o descripción...">
-      <select id="in-tipo" class="${inputCls} !w-48"><option value="">Todos los tipos</option>${TIPOS.map(t => `<option value="${t}">${label(t)}</option>`).join('')}</select>
-      <select id="in-sev" class="${inputCls} !w-36"><option value="">Toda severidad</option><option>ALTA</option><option>MEDIA</option><option>BAJA</option></select>
-      <select id="in-est" class="${inputCls} !w-40"><option value="">Todos los estados</option>${ESTADOS.map(t => `<option value="${t}">${label(t)}</option>`).join('')}</select>
+      <input id="in-q" class="${inputCls} sm:w-52" placeholder="Buscar PDV o descripción...">
+      <select id="in-tipo" class="${inputCls} sm:w-48"><option value="">Todos los tipos</option>${TIPOS.map(t => `<option value="${t}">${label(t)}</option>`).join('')}</select>
+      <select id="in-sev" class="${inputCls} sm:w-36"><option value="">Toda severidad</option><option>ALTA</option><option>MEDIA</option><option>BAJA</option></select>
+      <select id="in-est" class="${inputCls} sm:w-40"><option value="">Todos los estados</option>${ESTADOS.map(t => `<option value="${t}">${label(t)}</option>`).join('')}</select>
     </div><div id="in-body"></div>`;
   root.querySelector('#in-refresh').onclick = () => load();
   root.querySelector('#in-q').oninput = debounce(e => { f.q = e.target.value.toLowerCase(); draw(); });

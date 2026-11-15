@@ -19,7 +19,10 @@ class ApiClient {
   clearSession() { sessionStorage.removeItem(CONFIG.TOKEN_KEY); sessionStorage.removeItem(CONFIG.USER_KEY); }
 
   getEffectiveBaseUrl() {
-    if (this.preferLocalProxy) return CONFIG.LOCAL_PROXY_API;
+    if (this.preferLocalProxy) {
+      const isLocal = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+      return isLocal ? CONFIG.LOCAL_PROXY_API : `${window.location.origin}/api`;
+    }
     return CONFIG.API_BASE_URL;
   }
 

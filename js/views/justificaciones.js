@@ -36,11 +36,11 @@ function frame() {
   root.innerHTML = `
     ${pageHeader('Justificaciones de asistencia', 'Revise el motivo, la descripción y el sustento fotográfico. Apruebe o rechace con un comentario; el solicitante es notificado por el sistema.',
       `<button id="j-refresh" class="${btnGhost}"><i class="fa-solid fa-rotate"></i> Actualizar</button>`)}
-    <div id="j-kpis" class="grid grid-cols-3 gap-3 mb-4"></div>
+    <div id="j-kpis" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4"></div>
     <div class="flex flex-wrap gap-2 mb-3">
-      <input id="j-q" class="${inputCls} !w-56" placeholder="Buscar persona...">
-      <select id="j-estado" class="${inputCls} !w-44"><option value="">Todos los estados</option><option>PENDIENTE</option><option>APROBADA</option><option>RECHAZADA</option></select>
-      <input id="j-fecha" type="date" class="${inputCls} !w-40">
+      <input id="j-q" class="${inputCls} sm:w-56" placeholder="Buscar persona...">
+      <select id="j-estado" class="${inputCls} sm:w-44"><option value="">Todos los estados</option><option>PENDIENTE</option><option>APROBADA</option><option>RECHAZADA</option></select>
+      <input id="j-fecha" type="date" class="${inputCls} sm:w-40">
     </div><div id="j-body"></div>`;
   root.querySelector('#j-refresh').onclick = () => load();
   root.querySelector('#j-q').oninput = debounce(e => { filt.q = e.target.value.toLowerCase(); draw(); });

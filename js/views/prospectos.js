@@ -31,10 +31,10 @@ function frame() {
     <div id="pr-kpis" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4"></div>
     <div class="flex flex-wrap gap-2 mb-3 items-center">
       <div class="inline-flex bg-stone-100 rounded-xl p-1 text-xs font-bold" id="pr-tabs"><button data-v="kanban" class="px-3 py-1.5 rounded-lg">Pipeline</button><button data-v="lista" class="px-3 py-1.5 rounded-lg">Lista</button></div>
-      <input id="pr-q" class="${inputCls} !w-52" placeholder="Buscar nombre o dirección...">
-      <select id="pr-estado" class="${inputCls} !w-40"><option value="">Todos los estados</option>${ESTADOS.map(e => `<option value="${e}">${label(e)}</option>`).join('')}</select>
-      <select id="pr-zona" class="${inputCls} !w-44"><option value="">Todas las zonas</option></select>
-      <select id="pr-tipo" class="${inputCls} !w-40"><option value="">Todos los tipos</option></select></div><div id="pr-body"></div>`;
+      <input id="pr-q" class="${inputCls} sm:w-52" placeholder="Buscar nombre o dirección...">
+      <select id="pr-estado" class="${inputCls} sm:w-40"><option value="">Todos los estados</option>${ESTADOS.map(e => `<option value="${e}">${label(e)}</option>`).join('')}</select>
+      <select id="pr-zona" class="${inputCls} sm:w-44"><option value="">Todas las zonas</option></select>
+      <select id="pr-tipo" class="${inputCls} sm:w-40"><option value="">Todos los tipos</option></select></div><div id="pr-body"></div>`;
   root.querySelector('#pr-refresh').onclick = () => load();
   root.querySelector('#pr-tabs').onclick = e => { const b = e.target.closest('[data-v]'); if (b) { view = b.dataset.v; draw(); } };
   root.querySelector('#pr-q').oninput = debounce(e => { f.q = e.target.value.toLowerCase(); draw(); });

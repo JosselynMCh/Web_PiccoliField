@@ -8,20 +8,23 @@ const LOCAL_PROXY_API = 'http://127.0.0.1:3000/api';
 export const CONFIG = {
   RENDER_API,
   LOCAL_PROXY_API,
-  DEFAULT_API: RENDER_API,
 
-  // Cuando se ejecuta localmente (localhost / 127.0.0.1), usa el passthrough local en 127.0.0.1:3000/api
-  // para que las peticiones con Authorization: Bearer no sean bloqueadas por preflight CORS de Render.
+  get DEFAULT_API() {
+    if (typeof window !== 'undefined') {
+      const isLocalOtherPort = ['localhost', '127.0.0.1'].includes(window.location.hostname) && window.location.port !== '3000';
+      return isLocalOtherPort ? LOCAL_PROXY_API : `${window.location.origin}/api`;
+    }
+    return RENDER_API;
+  },
+
+  // En Vercel (mediante vercel.json rewrites) y en server.py (puerto 3000), usa /api del mismo origen
+  // para evitar cualquier bloqueo CORS del navegador. En Live Server local (ej. 5500), usa 127.0.0.1:3000/api.
   get API_BASE_URL() {
     const saved = (localStorage.getItem('piccoli_api_url') || '').trim().replace(/\/+$/, '');
-    const isLocalHost = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
-    if (isLocalHost) {
-      if (!saved || saved.includes('piccolifield-api-smkc.onrender.com')) {
-        return window.location.port === '3000' ? `${window.location.origin}/api` : LOCAL_PROXY_API;
-      }
+    if (saved && !saved.includes('piccolifield-api-smkc.onrender.com')) {
+      return saved;
     }
-    if (saved) return saved;
-    return RENDER_API;
+    return this.DEFAULT_API;
   },
 
   get POLLING_INTERVAL_SECONDS() {

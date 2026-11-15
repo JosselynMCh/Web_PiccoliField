@@ -43,7 +43,7 @@ function show() {
   const panel = root.querySelector('#rp-panel');
   panel.innerHTML = card(`<div class="p-4 border-b border-stone-100 flex flex-wrap items-center gap-2">
       <h3 class="text-sm font-black mr-auto">${r.title} <span class="text-stone-400 font-bold text-xs" id="rp-count"></span></h3>
-      ${r.dateField ? `<input id="rp-d1" type="date" class="${inputCls} !w-36"><span class="text-xs text-stone-400">a</span><input id="rp-d2" type="date" class="${inputCls} !w-36">` : ''}
+      ${r.dateField ? `<input id="rp-d1" type="date" class="${inputCls} sm:w-36"><span class="text-xs text-stone-400">a</span><input id="rp-d2" type="date" class="${inputCls} sm:w-36">` : ''}
       <button id="rp-csv" class="${btnPrimary}"><i class="fa-solid fa-file-csv"></i> CSV</button><button id="rp-json" class="${btnGhost}"><i class="fa-solid fa-file-code"></i> JSON</button></div>
     <div id="rp-table"></div>`);
   const apply = () => {

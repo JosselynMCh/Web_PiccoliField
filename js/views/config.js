@@ -11,7 +11,7 @@ export async function render(container) {
     <div class="grid lg:grid-cols-2 gap-4">
       ${card(`<div class="p-5 space-y-3 text-xs"><h3 class="text-sm font-black">Conexión con la API</h3>
         <div><label class="font-black block mb-1">URL base de la API</label><input id="cf-url" class="${inputCls}" value="${esc(CONFIG.API_BASE_URL)}"></div>
-        <div class="flex gap-2"><button id="cf-save" class="${btnPrimary}">Guardar</button><button id="cf-test" class="${btnGhost}"><i class="fa-solid fa-plug"></i> Probar conexión</button><button id="cf-reset" class="${btnGhost}">Restablecer</button></div>
+        <div class="flex flex-wrap gap-2"><button id="cf-save" class="${btnPrimary}">Guardar</button><button id="cf-test" class="${btnGhost}"><i class="fa-solid fa-plug"></i> Probar conexión</button><button id="cf-reset" class="${btnGhost}">Restablecer</button></div>
         <div id="cf-result" class="p-3 rounded-xl bg-stone-50 hidden"></div></div>`)}
       ${card(`<div class="p-5 space-y-3 text-xs"><h3 class="text-sm font-black">Actualización periódica</h3>
         <p class="text-stone-600">El panel usa <b>polling inteligente con ETag</b>: consulta cada <b>${CONFIG.POLLING_INTERVAL_SECONDS}s</b> enviando <code>If-None-Match</code> (la API puede responder <code>304</code> sin cuerpo), se pausa con la pestaña oculta o un formulario abierto y refresca solo la vista activa, sin recargar la página.</p>

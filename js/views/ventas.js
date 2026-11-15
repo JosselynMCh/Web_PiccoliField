@@ -77,7 +77,7 @@ async function detail(v) {
   const hist = r.historial_asignaciones || [];
   openModal(modalHeader(esc(d.nombre || v.nombre), esc(d.local_pertenece || v.local)) + `
     <div class="p-5 space-y-4 text-xs">
-      <div class="grid grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Vendido</div><div class="text-lg font-black">${num(pick(d, 'cantidadVendida', 'monto_vendido'), v.vendido)}</div></div>
         <div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Meta</div><div class="text-lg font-black">${num(d.meta_asignada, v.meta)}</div></div>
         <div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Logro</div><div class="text-lg font-black">${Math.round(num(d.porcentaje_logro, pct(v.vendido, v.meta)))}%</div></div></div>
@@ -117,9 +117,9 @@ function drawPedidos() {
     cant: num(pick(p, 'cantSolicitada', 'cantidad')), fecha: p.fecha, estado: String(pick(p, 'estado', 'estado_pedido', 'estadoDespacho') || 'REGISTRADO').toUpperCase().replace(/ /g, '_') }))
     .filter(r => (!f.pdv || String(r.pdv) === f.pdv) && (!f.estado || r.estado === f.estado) && (!f.q || (r.prod + pn(r.pdv)).toLowerCase().includes(f.q)));
   body.innerHTML = `<div class="flex flex-wrap gap-2 mb-3">
-    <input id="p-q" value="${esc(f.q)}" class="${inputCls} !w-52" placeholder="Buscar producto o PDV...">
-    <select id="p-pdv" class="${inputCls} !w-56"><option value="">Todos los PDV</option>${pdvs.map(p => `<option value="${p.id}" ${f.pdv == p.id ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('')}</select>
-    <select id="p-est" class="${inputCls} !w-44"><option value="">Todos los estados</option>${PEDIDO_ESTADOS.map(e => `<option value="${e}" ${f.estado === e ? 'selected' : ''}>${label(e)}</option>`).join('')}</select></div>
+    <input id="p-q" value="${esc(f.q)}" class="${inputCls} sm:w-52" placeholder="Buscar producto o PDV...">
+    <select id="p-pdv" class="${inputCls} sm:w-56"><option value="">Todos los PDV</option>${pdvs.map(p => `<option value="${p.id}" ${f.pdv == p.id ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('')}</select>
+    <select id="p-est" class="${inputCls} sm:w-44"><option value="">Todos los estados</option>${PEDIDO_ESTADOS.map(e => `<option value="${e}" ${f.estado === e ? 'selected' : ''}>${label(e)}</option>`).join('')}</select></div>
     ${card(rows.length ? `<div class="overflow-x-auto"><table class="w-full text-xs"><thead class="bg-stone-50 text-[10px] uppercase text-stone-500"><tr><th class="p-3 text-left">Nº</th><th class="p-3 text-left">Punto de venta</th><th class="p-3 text-left">Producto</th><th class="p-3 text-right">Cantidad</th><th class="p-3 text-left">Fecha</th><th class="p-3 text-left">Estado</th></tr></thead>
     <tbody class="divide-y divide-stone-100">${rows.map(r => `<tr class="hover:bg-brand-ivory/50"><td class="p-3 font-black">#${r.id}</td><td class="p-3">${esc(pn(r.pdv))}</td><td class="p-3">${esc(r.prod)}</td><td class="p-3 text-right font-bold">${r.cant}</td><td class="p-3">${fmtDateTime(r.fecha)}</td>
       <td class="p-3"><select data-id="${r.id}" data-prev="${r.estado}" class="px-2 py-1 rounded-lg border border-stone-300 text-[11px] font-bold">${[...new Set([r.estado, ...PEDIDO_ESTADOS])].map(e => `<option value="${e}" ${e === r.estado ? 'selected' : ''}>${label(e)}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div>`

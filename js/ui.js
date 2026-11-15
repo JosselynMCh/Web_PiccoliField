@@ -81,20 +81,20 @@ export const errorHTML = (msg, retryId = 'btn-retry') => `
 
 /* ---------- Componentes ---------- */
 export const pageHeader = (title, subtitle, actions = '') => `
-  <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
-    <div><h2 class="text-xl font-black text-brand-dark tracking-tight">${esc(title)}</h2>
+  <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5">
+    <div class="min-w-0"><h2 class="text-lg sm:text-xl font-black text-brand-dark tracking-tight">${esc(title)}</h2>
     <p class="text-xs text-stone-500 mt-0.5 max-w-2xl">${esc(subtitle)}</p></div>
-    <div class="flex flex-wrap items-center gap-2">${actions}</div>
+    ${actions ? `<div class="flex flex-wrap items-center gap-2 shrink-0">${actions}</div>` : ''}
   </div>`;
 
 export const kpi = (labelTxt, value, icon, color = 'text-brand-chocolate', sub = '') => `
-  <div class="bg-white rounded-2xl border border-stone-200 p-4 shadow-xs">
-    <div class="flex items-center justify-between mb-2">
-      <span class="text-[11px] font-bold uppercase tracking-wide text-stone-500">${esc(labelTxt)}</span>
-      <span class="w-8 h-8 rounded-xl bg-brand-ivory flex items-center justify-center ${color}"><i class="fa-solid ${icon} text-sm"></i></span>
+  <div class="bg-white rounded-2xl border border-stone-200 p-3.5 sm:p-4 shadow-xs min-w-0">
+    <div class="flex items-center justify-between gap-1.5 mb-2">
+      <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wide text-stone-500 truncate">${esc(labelTxt)}</span>
+      <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-brand-ivory flex items-center justify-center shrink-0 ${color}"><i class="fa-solid ${icon} text-xs sm:text-sm"></i></span>
     </div>
-    <div class="text-2xl font-black text-brand-dark leading-none">${value}</div>
-    ${sub ? `<div class="text-[11px] text-stone-500 mt-1.5">${sub}</div>` : ''}
+    <div class="text-lg sm:text-2xl font-black text-brand-dark leading-none truncate">${value}</div>
+    ${sub ? `<div class="text-[10px] sm:text-[11px] text-stone-500 mt-1.5 truncate">${sub}</div>` : ''}
   </div>`;
 
 export const card = (inner, cls = '') => `<div class="bg-white rounded-2xl border border-stone-200 shadow-xs ${cls}">${inner}</div>`;

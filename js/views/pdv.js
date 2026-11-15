@@ -31,9 +31,9 @@ function frame() {
     <div id="pv-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4"></div>
     <div class="flex flex-wrap gap-2 mb-3 items-center">
       <div class="inline-flex bg-stone-100 rounded-xl p-1 text-xs font-bold" id="pv-tabs"><button data-v="lista" class="px-3 py-1.5 rounded-lg">Lista</button><button data-v="mapa" class="px-3 py-1.5 rounded-lg">Mapa</button></div>
-      <input id="pv-q" class="${inputCls} !w-56" placeholder="Buscar por nombre o dirección...">
-      <select id="pv-tipo" class="${inputCls} !w-40"><option value="">Todos los tipos</option><option value="VENTA">VENTA</option><option value="DISTRIBUCION">DISTRIBUCIÓN</option></select>
-      <select id="pv-estado" class="${inputCls} !w-40"><option value="">Todos los estados</option><option>ACTIVO</option><option>INACTIVO</option><option>CLAUSURADO</option></select>
+      <input id="pv-q" class="${inputCls} sm:w-56" placeholder="Buscar por nombre o dirección...">
+      <select id="pv-tipo" class="${inputCls} sm:w-40"><option value="">Todos los tipos</option><option value="VENTA">VENTA</option><option value="DISTRIBUCION">DISTRIBUCIÓN</option></select>
+      <select id="pv-estado" class="${inputCls} sm:w-40"><option value="">Todos los estados</option><option>ACTIVO</option><option>INACTIVO</option><option>CLAUSURADO</option></select>
     </div><div id="pv-body"></div>`;
   root.querySelector('#pv-refresh').onclick = () => load();
   root.querySelector('#pv-tabs').onclick = e => { const b = e.target.closest('[data-v]'); if (b) { view = b.dataset.v; draw(); } };
@@ -66,7 +66,7 @@ function draw() {
 }
 
 function drawMap(body, rows) {
-  body.innerHTML = card(`<div id="pv-map" class="h-[540px] rounded-2xl"></div>`);
+  body.innerHTML = card(`<div id="pv-map" class="h-[360px] sm:h-[540px] rounded-2xl"></div>`);
   map?.remove();
   map = L.map('pv-map').setView(CONFIG.MAP_DEFAULT_CENTER, CONFIG.MAP_DEFAULT_ZOOM);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
@@ -98,10 +98,10 @@ async function detail(p) {
         <div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Tipo</div><b>${esc(label(d.tipo || p.tipo))}</b></div>
         <div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Geocerca</div><b>${num(d.radio_geocerca, p.radio) || '—'} m</b></div>
         <div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Coordenadas</div>${validCoord(d.latitud ?? p.lat, d.longitud ?? p.lng) ? `<a class="text-sky-700 font-bold" target="_blank" href="${mapsLink(d.latitud ?? p.lat, d.longitud ?? p.lng)}">Cómo llegar</a>` : '—'}</div></div>
-      <div class="p-4 rounded-xl border border-brand-gold/40 bg-brand-ivory flex items-center gap-3">
+      <div class="p-4 rounded-xl border border-brand-gold/40 bg-brand-ivory flex flex-wrap sm:flex-nowrap items-center gap-3">
         ${avatar(respNombre || 'Sin asignar', { auth: respId ? `supervision/impulsadores/${respId}/foto` : '', size: 'w-12 h-12' })}
-        <div class="flex-1"><div class="text-[10px] uppercase font-bold text-stone-500">Responsable actual</div><div class="text-sm font-black">${esc(respNombre || 'Sin responsable asignado')}</div>
-          <div class="text-stone-500">${esc(respCorreo)} ${d.impulsador_meta ? `· Meta: ${d.impulsador_meta}` : ''}</div></div>
+        <div class="flex-1 min-w-0"><div class="text-[10px] uppercase font-bold text-stone-500">Responsable actual</div><div class="text-sm font-black truncate">${esc(respNombre || 'Sin responsable asignado')}</div>
+          <div class="text-stone-500 truncate">${esc(respCorreo)} ${d.impulsador_meta ? `· Meta: ${d.impulsador_meta}` : ''}</div></div>
         <button id="pv-reasignar" class="${btnPrimary}"><i class="fa-solid fa-user-pen"></i> ${respNombre ? 'Reasignar' : 'Asignar'}</button></div>
       ${al.length ? `<div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900"><b>${al.length} alerta(s) de stock pendientes:</b> ${al.map(a => esc(a.producto)).join(', ')}. <a href="#stock" data-close-modal class="font-black underline">Atender</a></div>` : ''}
       <div class="grid md:grid-cols-2 gap-4">
