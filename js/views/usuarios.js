@@ -185,8 +185,17 @@ async function ficha(p) {
         cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
         const dataUrl = cv.toDataURL('image/jpeg', 0.85);
         setCustomAvatar({ id: p.id, name: p.nombre }, dataUrl);
+        p.foto = dataUrl;
+        try {
+          if (p.id) {
+            const res = await S.actualizarFotoUsuario(p.id, dataUrl);
+            if (res?.data?.url_foto) p.foto = res.data.url_foto;
+          }
+          toast('Foto guardada en la base de datos (url_foto)');
+        } catch {
+          toast('Foto actualizada en este navegador (recuerde hacer deploy del backend en Render)', 'info');
+        }
         window.dispatchEvent(new CustomEvent('piccoli:avatar-updated'));
-        toast('Foto de perfil actualizada');
         ficha(p);
         draw();
       };

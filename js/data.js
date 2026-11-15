@@ -219,6 +219,24 @@ export const S = {
   seguimientos: async (id) => list(await api.get(`prospectos/${id}/seguimientos`)),
   addSeguimiento: (id, notas) => api.post(`prospectos/${id}/seguimientos`, { notas, idProspecto: id, fecha: new Date().toISOString().slice(0, 10) }),
 
+  // Perfil y Fotos de Usuario (guarda en BD vía API en Render)
+  actualizarFotoUsuario: async (idUsuario, urlFotoData) => {
+    api.blobCache.clear();
+    if (idUsuario) {
+      return api.put(`usuarios/${idUsuario}/foto`, { idUsuario, url_foto: urlFotoData });
+    }
+    return api.put('perfil/foto', { url_foto: urlFotoData });
+  },
+  actualizarFotoMiPerfil: async (urlFotoData, idUsuario = null) => {
+    api.blobCache.clear();
+    try {
+      return await api.put('perfil/foto', { url_foto: urlFotoData });
+    } catch (e) {
+      if (idUsuario) return api.put(`usuarios/${idUsuario}/foto`, { idUsuario, url_foto: urlFotoData });
+      throw e;
+    }
+  },
+
   // Opcionales: la app Android no los consume; se prueban y se informa si el backend no los expone
   async probe(paths, query) {
     let last;

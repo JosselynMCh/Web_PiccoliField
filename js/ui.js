@@ -267,12 +267,22 @@ export function hydrateImages(root = document) {
       return showImg(rawSrc);
     }
 
-    // 2) Intentar endpoint autenticado (/api/supervision/impulsadores/{id}/foto)
+    // 2) Intentar endpoint autenticado (/api/usuarios/{id}/foto o /api/supervision/impulsadores/{id}/foto)
     if (rawAuth) {
-      try {
-        const blobUrl = await api.blobUrl(rawAuth);
-        if (blobUrl) return showImg(blobUrl);
-      } catch { /* continúa con data-src si existe */ }
+      const candidates = [rawAuth];
+      const m = rawAuth.match(/^(?:usuarios|supervision\/impulsadores)\/(\d+)\/foto$/);
+      if (m) {
+        const alt = rawAuth.startsWith('usuarios/')
+          ? `supervision/impulsadores/${m[1]}/foto`
+          : `usuarios/${m[1]}/foto`;
+        candidates.push(alt);
+      }
+      for (const ep of candidates) {
+        try {
+          const blobUrl = await api.blobUrl(ep);
+          if (blobUrl) return showImg(blobUrl);
+        } catch { /* intenta siguiente candidato o data-src */ }
+      }
     }
 
     // 3) Intentar ruta url_foto / foto_perfil (ej. uploads/perfiles/...)
@@ -295,7 +305,7 @@ export function hydrateImages(root = document) {
 export function avatar(name, { id, auth, src, size = 'w-9 h-9' } = {}) {
   const custom = getCustomAvatar(id, name);
   const effectiveSrc = custom || src || '';
-  const effectiveAuth = custom ? '' : (auth || (id ? `supervision/impulsadores/${id}/foto` : ''));
+  const effectiveAuth = custom ? '' : (auth || (id ? `usuarios/${id}/foto` : ''));
   const has = effectiveAuth || effectiveSrc;
   return `<span data-img-wrap class="relative inline-flex ${size} rounded-full overflow-hidden bg-brand-gold text-brand-dark font-black text-xs items-center justify-center shrink-0">
     ${has ? `<img ${effectiveAuth ? `data-auth="${esc(effectiveAuth)}"` : ''} ${effectiveSrc ? `data-src="${esc(effectiveSrc)}"` : ''} class="w-full h-full object-cover hidden" alt="">` : ''}
