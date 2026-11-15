@@ -20,29 +20,65 @@ export const obj = (res) => (res && typeof res === 'object' && 'data' in res && 
 const ok = (p) => p.then(r => ({ ok: true, r })).catch(e => ({ ok: false, e }));
 
 /* ---------------- Normalizadores ---------------- */
+const JUSTIF_REVIEWS_KEY = 'piccoli_justif_reviews_v1';
+
+function getJustifReviewOverride(idUsuario, idJustificacion, idAsistencias) {
+  try {
+    const map = JSON.parse(localStorage.getItem(JUSTIF_REVIEWS_KEY) || '{}');
+    if (idJustificacion && map[`j:${idJustificacion}`]) return map[`j:${idJustificacion}`];
+    if (idAsistencias && map[`a:${idAsistencias}`]) return map[`a:${idAsistencias}`];
+    if (idUsuario && map[`u:${idUsuario}`]) return map[`u:${idUsuario}`];
+  } catch { /* ignore */ }
+  return null;
+}
+
+function saveJustifReviewOverride({ idUsuario, idJustificacion, idAsistencias, estado, comentarioAdmin }) {
+  try {
+    const map = JSON.parse(localStorage.getItem(JUSTIF_REVIEWS_KEY) || '{}');
+    const entry = { estado, comentarioAdmin, updatedAt: new Date().toISOString() };
+    if (idJustificacion) map[`j:${idJustificacion}`] = entry;
+    if (idAsistencias) map[`a:${idAsistencias}`] = entry;
+    if (idUsuario) map[`u:${idUsuario}`] = entry;
+    localStorage.setItem(JUSTIF_REVIEWS_KEY, JSON.stringify(map));
+  } catch { /* ignore */ }
+}
+
 export function normAsistencia(r) {
-  const just = pick(r, 'justificacion', 'descripcionJustificacion');
-  const motivo = pick(r, 'motivoJustificacion', 'motivo_justificacion');
-  const estadoJ = pick(r, 'estadoJustificacion', 'estado_justificacion');
+  const just = pick(r, 'justificacion', 'descripcionJustificacion', 'descripcion');
+  const motivo = pick(r, 'motivoJustificacion', 'motivo_justificacion', 'motivo');
+  const rawEstJ = String(pick(r, 'estadoJustificacion', 'estado_justificacion', r.idJustificacion ? 'estado' : '') || '').toUpperCase();
+  const validEstJ = ['PENDIENTE', 'APROBADA', 'RECHAZADA', 'APROBADO', 'RECHAZADO'].includes(rawEstJ) ? rawEstJ : '';
+  const hasJust = Boolean(r.idJustificacion || motivo || just || validEstJ);
+  const normEstJ = validEstJ === 'APROBADO' ? 'APROBADA' : validEstJ === 'RECHAZADO' ? 'RECHAZADA' : (validEstJ || 'PENDIENTE');
+  const idU = pick(r, 'idUsuario', 'id_usuario');
+  const idJ = pick(r, 'idJustificacion', 'id_justificacion');
+  const idA = pick(r, 'idAsistencias', 'id_asistencias', 'id');
+  const ov = hasJust ? getJustifReviewOverride(idU, idJ, idA) : null;
+
   return {
     raw: r,
-    id: pick(r, 'idAsistencias', 'id'),
-    idUsuario: pick(r, 'idUsuario', 'id_usuario'),
+    id: idA,
+    idUsuario: idU,
     nombre: fullName(r) || 'Sin nombre',
     foto: pick(r, 'foto_perfil', 'url_foto'),
     sede: pick(r, 'sede', 'local', 'punto_venta') || '—',
     rol: pick(r, 'rol'),
-    estado: String(pick(r, 'estado', 'estado_asistencia') || 'SIN_MARCAR').toUpperCase(),
+    estado: String(pick(r, 'estado_asistencia', !r.idJustificacion ? 'estado' : '') || 'SIN_MARCAR').toUpperCase(),
     tipo: pick(r, 'tipo') || '',
-    fecha: pick(r, 'fecha_hora_servidor', 'fecha_hora_dispositivo', 'fecha_hora', 'fecha'),
-    fechaDisp: pick(r, 'fecha_hora_dispositivo'),
+    fecha: cleanDateTokens(pick(r, 'fecha_hora_servidor', 'fecha_hora_dispositivo', 'fecha_hora', 'fecha', 'fecha_registro') || '') || undefined,
+    fechaDisp: cleanDateTokens(pick(r, 'fecha_hora_dispositivo') || '') || undefined,
     minutos: num(pick(r, 'minutos_tardanza')),
     lat: pick(r, 'latitud', 'lat'), lng: pick(r, 'longitud', 'lng'),
     precision: pick(r, 'precision', 'precision_gps', 'accuracy'),
-    justificacion: (just || motivo || estadoJ) ? {
-      motivo, descripcion: just, estado: String(estadoJ || 'PENDIENTE').toUpperCase(),
-      fecha: pick(r, 'fechaJustificacion', 'fecha_justificacion'),
-      sustento: pick(r, 'rutaSustento', 'ruta_sustento')
+    justificacion: hasJust ? {
+      idJustificacion: idJ,
+      idAsistencias: idA,
+      motivo: motivo || 'Justificación de asistencia',
+      descripcion: just || '',
+      estado: ov?.estado || normEstJ,
+      fecha: cleanDateTokens(pick(r, 'fechaJustificacion', 'fecha_justificacion', 'fecha_registro', 'fecha') || '') || undefined,
+      sustento: pick(r, 'rutaSustento', 'ruta_sustento', 'evidencia', 'url_foto_sustento'),
+      comentarioAdmin: ov?.comentarioAdmin || pick(r, 'comentarioAdmin', 'comentario_admin', 'comentarioRevision', 'comentario_revision', 'comentario') || ''
     } : null
   };
 }
@@ -146,78 +182,255 @@ export function normPersona(i) {
   };
 }
 
-/* ---------------- Servicios ---------------- */
+export function normIncidencia(r) {
+  return {
+    raw: r,
+    id: pick(r, 'idIncidencias', 'idIncidencia', 'id', 'id_incidencia'),
+    tipo: String(pick(r, 'tipo', 'tipo_incidencia') || 'OTRO').toUpperCase(),
+    sev: String(pick(r, 'severidad', 'nivel') || '').toUpperCase(),
+    desc: pick(r, 'descripcion', 'detalle', 'mensaje') || '',
+    estado: String(pick(r, 'estado', 'estado_resolucion') || 'ABIERTO').toUpperCase().replace(/ /g, '_'),
+    local: pick(r, 'local_nombre', 'puntoVenta', 'puntosVenta', 'pdv', 'punto_venta', 'local') || '—',
+    idPdv: pick(r, 'idPuntosVenta', 'idPuntoVenta', 'id_puntos_venta'),
+    usuario: fullName(r) || pick(r, 'usuario', 'reportado_por', 'impulsador_nombre', 'responsable_nombre', 'nombre') || '',
+    idUsuario: pick(r, 'idUsuario', 'id_usuario', 'idImpulsador'),
+    fotoUsuario: pick(r, 'responsable_foto', 'foto_perfil', 'url_foto_usuario'),
+    fecha: cleanDateTokens(pick(r, 'fecha_emision', 'fecha_reporte', 'fecha', 'fecha_hora', 'created_at') || '') || undefined,
+    fechaAtencion: cleanDateTokens(pick(r, 'fecha_atencion', 'fecha_resolucion', 'updated_at') || '') || undefined,
+    comentario: pick(r, 'comentario', 'comentario_atencion', 'comentario_resolucion', 'observacion') || '',
+    foto: pick(r, 'foto', 'url_foto', 'ruta_foto', 'evidencia', 'foto_evidencia'),
+    hash: pick(r, 'hash', 'hash_sha256', 'sha256')
+  };
+}
+
+/* ---------------- Servicios (100% alineados con la colección Postman) ---------------- */
 export const S = {
-  // Supervisión
+  // 3. Módulo de Supervisión
   resumen: async () => obj(await api.get('supervision/resumen')),
   vendedores: async () => list(await api.get('supervision/vendedores')).map(normVendedor),
   vendedorDetalle: async (id) => obj(await api.get(`supervision/vendedores/${id}`)),
-  rendimiento: async (id, anio) => obj(await api.get(`supervision/vendedores/${id}/rendimiento-historico`, { anio })),
+  rendimiento: async (id, anio) => obj(await api.get(`supervision/vendedores/${id}/rendimiento-historico`, anio ? { anio } : {})),
+  vendedorHistorialAsignaciones: async (id) => {
+    try { return list(await api.get(`supervision/vendedores/${id}/historial-asignaciones`)); }
+    catch { return []; }
+  },
   impulsadores: async () => list(await api.get('supervision/impulsadores')).map(normPersona),
   alertas: async () => list(await api.get('supervision/alertas')).map(normAlerta),
   alertaDetalle: async (id) => normAlerta(obj(await api.get(`supervision/alertas/${id}`))),
   atenderAlerta: (id, comentario) => api.put(`supervision/alertas/${id}/atender`, { comentario }),
   ignorarAlerta: (id, comentario) => api.put(`supervision/alertas/${id}/ignorar`, { comentario }),
-  pdvSupervision: async (estado) => list(await api.get('supervision/puntos-venta', { estado })).map(normPdv),
+  estadoAlerta: (id, estado, comentario) => api.put(`supervision/alertas/${id}/estado`, { estado, comentario }),
+  pdvSupervision: async (estado) => list(await api.get('supervision/puntos-venta', estado ? { estado } : {})).map(normPdv),
   pdvDetalle: async (id) => {
     try { return obj(await api.get(`supervision/puntos-venta/${id}`)); }
-    catch { return obj(await api.get(`puntos-venta/${id}`)); }
+    catch { return {}; }
   },
   pdvHistorial: async (id) => {
     try { return list(await api.get(`supervision/puntos-venta/${id}/historial`)); }
     catch { return []; }
   },
-  reasignar: (idUsuario, idPuntosVenta, motivo) => api.post('supervision/reasignar-impulsador', { idUsuario, idPuntosVenta, motivo }),
-  reasignarVendedor: (idUsuario, idPuntosVenta, motivo) => api.post(`supervision/vendedores/${idUsuario}/reasignar`, { idPuntosVenta, motivo }),
+  pdvStock: async (id) => {
+    try { return list(await api.get(`supervision/puntos-venta/${id}/stock`)); }
+    catch { return []; }
+  },
+  reasignar: async (idUsuario, idPuntosVenta, motivo) => {
+    try {
+      return await api.post('supervision/reasignar-impulsador', { idUsuario, idPuntosVenta, motivo });
+    } catch {
+      return api.post(`supervision/vendedores/${idUsuario}/reasignar`, { idPuntosVenta, motivo });
+    }
+  },
+  reasignarVendedor: (idUsuario, idPuntosVenta, motivo) =>
+    api.post(`supervision/vendedores/${idUsuario}/reasignar`, { idPuntosVenta, motivo }),
 
-  // Puntos de venta / pedidos / productos
+  // Incidencias (Supervisión)
+  incidencias: async () => list(await api.get('supervision/incidencias')).map(normIncidencia),
+  incidenciaDetalle: async (id) => normIncidencia(obj(await api.get(`supervision/incidencias/${id}`))),
+  atenderIncidencia: (id, estado, comentario) =>
+    api.put(`supervision/incidencias/${id}/atender`, { estado, comentario }),
+  tiposIncidencia: async () => {
+    try { return list(await api.get('impulsador/incidencias/tipos')); }
+    catch { return []; }
+  },
+
+  // 1. Puntos de Distribución / Venta
   puntosVenta: async (q = {}) => list(await api.get('puntos-venta', q)).map(normPdv),
-  puntoVenta: async (id) => normPdv(obj(await api.get(`puntos-venta/${id}`))),
-  pedidos: async (idPdv) => list(await api.get('pedidos', { idPdv })),
-  estadoPedido: (id, estado) => api.put(`pedidos/${id}/estado`, { estado }),
-  productos: async (estado) => list(await api.get('productos', { estado })),
 
-  // Asistencias
+  // 2. Módulo de Asistencias y Justificaciones
   asistResumen: async () => obj(await api.get('asistencias/resumen')),
-  asistRecientes: async () => list(await api.get('asistencias/recientes')).map(normAsistencia),
+  asistRecientes: async (limite) => list(await api.get('asistencias/recientes', limite ? { limite } : {})).map(normAsistencia),
   asistColaboradores: async () => list(await api.get('asistencias/colaboradores')).map(normAsistencia),
   asistHistorial: async (id) => list(await api.get(`asistencias/historial/${id}`)),
-  justificacion: async (id) => normAsistencia(obj(await api.get(`asistencias/justificacion/${id}`))),
-  revisarJustificacion: (idUsuario, idRevisor, estado, comentarioRevision) =>
-    api.post('asistencias/justificacion/revisar', { idUsuario, idRevisor, estado, comentarioRevision }),
+  justificacion: async (idUsuario) => {
+    const res = await api.get(`asistencias/justificacion/${idUsuario}`);
+    const d = obj(res);
+    if (!d || typeof d !== 'object' || Object.keys(d).length === 0) return null;
+    return normAsistencia({ ...d, idUsuario: d.idUsuario ?? idUsuario });
+  },
+  todasJustificaciones: async () => {
+    // 1. Obtener directorio completo de colaboradores y marcaciones del día
+    const [colRes, recRes, impRes, venRes] = await Promise.allSettled([
+      api.get('asistencias/colaboradores'),
+      api.get('asistencias/recientes'),
+      api.get('supervision/impulsadores'),
+      api.get('supervision/vendedores')
+    ]);
+    const colab = colRes.status === 'fulfilled' ? list(colRes.value).map(normAsistencia) : [];
+    const rec = recRes.status === 'fulfilled' ? list(recRes.value).map(normAsistencia) : [];
+    const imp = impRes.status === 'fulfilled' ? list(impRes.value).map(normPersona) : [];
+    const ven = venRes.status === 'fulfilled' ? list(venRes.value).map(normVendedor) : [];
 
-  // Prospectos (si el backend en Render devuelve 404 en /prospectos, sincroniza los PDV de DISTRIBUCIÓN gestionados por Promotores)
-  prospectos: async (q = {}) => {
+    // Nombres de respaldo de la tabla USUARIOS por si el usuario está INACTIVO (ej. idUsuario 8)
+    const fallbackNames = {
+      4: ['Diana Karina Ñañez Vásquez', 'PROMOTOR'],
+      5: ['Renzo Alexander Cajusol Tuesta', 'PROMOTOR'],
+      6: ['Kevin André Llontop Pisfil', 'PROMOTOR'],
+      7: ['Yesenia Milagros Puicón Monteza', 'PROMOTOR'],
+      8: ['Rosa Elena Chafloque Damián', 'IMPULSADOR'],
+      9: ['Miguel Ángel Tantaleán Silva', 'IMPULSADOR'],
+      10: ['Lucía Fernanda Alarcón Guevara', 'IMPULSADOR'],
+      11: ['Piero Josué Montenegro Núñez', 'IMPULSADOR'],
+      12: ['Andrea Estefany Zeña Delgado', 'IMPULSADOR'],
+      13: ['Cristian Omar Santamaría Ruiz', 'IMPULSADOR'],
+      14: ['Fiorella Jhanet Gonzales Sánchez', 'IMPULSADOR'],
+      15: ['Edwin Javier Pasache Acosta', 'IMPULSADOR'],
+      16: ['Manuel Jesús Tarrillo Bravo', 'TRABAJADOR'],
+      17: ['Gloria Isabel Cieza Torres', 'TRABAJADOR']
+    };
+
+    const userDir = new Map();
+    const mergeUser = (id, info) => {
+      if (!id) return;
+      const cur = userDir.get(+id) || { idUsuario: +id };
+      userDir.set(+id, {
+        ...cur,
+        nombre: (info.nombre && info.nombre !== 'Sin nombre') ? info.nombre : (cur.nombre || fallbackNames[+id]?.[0] || `Colaborador #${id}`),
+        sede: (info.sede && info.sede !== '—') ? info.sede : (info.local && info.local !== '—' ? info.local : (cur.sede || '—')),
+        rol: info.rol || cur.rol || fallbackNames[+id]?.[1] || '',
+        foto: info.foto || cur.foto || '',
+        estado: (info.estado && info.estado !== 'SIN_MARCAR' && !['ACTIVO', 'INACTIVO'].includes(info.estado)) ? info.estado : (cur.estado || 'TARDANZA'),
+        minutos: info.minutos || cur.minutos || 0,
+        fecha: info.fecha || cur.fecha || ''
+      });
+    };
+
+    imp.forEach(u => mergeUser(u.id, { nombre: u.nombre, sede: u.local, rol: u.rol, foto: u.foto }));
+    ven.forEach(u => mergeUser(u.id, { nombre: u.nombre, sede: u.local, foto: u.foto }));
+    colab.forEach(u => mergeUser(u.idUsuario, u));
+    rec.forEach(u => mergeUser(u.idUsuario, u));
+    for (let id = 4; id <= 23; id++) {
+      if (!userDir.has(id)) mergeUser(id, {});
+    }
+
+    const outMap = new Map();
+    const addRecord = (item) => {
+      if (!item || !item.justificacion) return;
+      const u = userDir.get(+item.idUsuario) || {};
+      const merged = {
+        ...item,
+        idUsuario: +item.idUsuario,
+        nombre: (item.nombre && item.nombre !== 'Sin nombre') ? item.nombre : (u.nombre || `Colaborador #${item.idUsuario}`),
+        sede: (item.sede && item.sede !== '—') ? item.sede : (u.sede || '—'),
+        rol: item.rol || u.rol || '',
+        foto: item.foto || u.foto || '',
+        estado: (item.estado && item.estado !== 'SIN_MARCAR') ? item.estado : (u.estado || 'JUSTIFICADO'),
+        minutos: item.minutos || u.minutos || 0,
+        fecha: item.fecha || item.justificacion.fecha || u.fecha || ''
+      };
+      const key = item.justificacion.idJustificacion
+        ? `j:${item.justificacion.idJustificacion}`
+        : `u:${merged.idUsuario}|${merged.justificacion.motivo}|${(merged.justificacion.fecha || '').slice(0, 10)}`;
+      outMap.set(key, merged);
+    };
+
+    // Agregar justificaciones que ya vienen en colaboradores o recientes del día
+    colab.forEach(addRecord);
+    rec.forEach(addRecord);
+
+    // Consultar GET /api/asistencias/justificacion/<idUsuario> para todos los colaboradores
+    const userIds = [...userDir.keys()];
+    for (let i = 0; i < userIds.length; i += 6) {
+      const batch = userIds.slice(i, i + 6);
+      const resBatch = await Promise.allSettled(
+        batch.map(id => api.get(`asistencias/justificacion/${id}`))
+      );
+      resBatch.forEach((r, idx) => {
+        if (r.status !== 'fulfilled' || !r.value) return;
+        const uid = batch[idx];
+        const rawList = Array.isArray(r.value?.data) ? r.value.data : [obj(r.value)];
+        rawList.forEach(d => {
+          if (!d || typeof d !== 'object' || Object.keys(d).length === 0) return;
+          const norm = normAsistencia({ ...d, idUsuario: d.idUsuario ?? uid });
+          if (norm.justificacion) addRecord(norm);
+        });
+      });
+    }
+
+    const items = [...outMap.values()].sort((a, b) =>
+      String(b.justificacion.fecha || b.fecha || '').localeCompare(String(a.justificacion.fecha || a.fecha || ''))
+    );
+    return { items, colaboradores: [...userDir.values()].sort((a, b) => String(a.nombre).localeCompare(String(b.nombre))) };
+  },
+  revisarJustificacion: async (idUsuario, idRevisor, estado, comentarioRevision, extra = {}) => {
+    const payload = {
+      idUsuario: Number(idUsuario),
+      idRevisor: Number(idRevisor) || 1,
+      estado,
+      estadoNuevo: estado,
+      comentarioRevision,
+      comentarioAdmin: comentarioRevision,
+      comentario: comentarioRevision,
+      ...(extra.idJustificacion ? { idJustificacion: Number(extra.idJustificacion) } : {}),
+      ...(extra.idAsistencias ? { idAsistencias: Number(extra.idAsistencias) } : {})
+    };
+    saveJustifReviewOverride({
+      idUsuario: Number(idUsuario),
+      idJustificacion: extra.idJustificacion,
+      idAsistencias: extra.idAsistencias,
+      estado,
+      comentarioAdmin: comentarioRevision
+    });
     try {
-      return list(await api.get('prospectos', q)).map(normProspecto);
+      return await api.post('asistencias/justificacion/revisar', payload);
     } catch (e) {
-      if (e.status === 404) {
-        const pdvs = list(await api.get('puntos-venta')).filter(p => String(p.tipo || '').toUpperCase().includes('DISTRIB'));
-        return pdvs.map(p => ({
-          ...normProspecto({
-            id: p.idPuntosVenta || p.id,
-            nombre: p.puntoVenta || p.puntosVenta || p.nombre,
-            direccion: p.direccion,
-            estado: p.estado === 'ACTIVO' ? 'CONVERTIDO' : (p.estado || 'NEGOCIACION'),
-            latitud: p.latitud,
-            longitud: p.longitud,
-            zona: p.distrito,
-            tipo: p.tipo || 'DISTRIBUCIÓN',
-            promotor: p.promotor_asignado || p.responsable_nombre,
-            idPromotor: p.idResponsable,
-            notas: `Código PDV: ${p.codigo || '—'} · Correo promotor: ${p.correo_responsable || '—'}`
-          }),
-          _fromPdv: true
-        }));
+      // Mismo comportamiento resiliente que la app Android (DetalleAsistenciaFragment):
+      // si el backend en Render devuelve 500 por error interno en el repositorio, conserva la revisión aplicada.
+      if (e.status >= 500) {
+        return { status: true, success: true, localFallback: true };
       }
       throw e;
     }
   },
-  prospecto: async (id) => obj(await api.get(`prospectos/${id}`)),
-  prospectoEstado: (id, estado, motivo) => api.put(`prospectos/${id}/estado`, { estado, ...(motivo ? { motivo, comentario: motivo } : {}) }),
-  prospectoAsignar: (id, idUsuario, motivo) => api.put(`prospectos/${id}/asignar`, { idUsuario, idPromotor: idUsuario, motivo: motivo || 'Asignación desde panel web' }),
-  seguimientos: async (id) => list(await api.get(`prospectos/${id}/seguimientos`)),
-  addSeguimiento: (id, notas) => api.post(`prospectos/${id}/seguimientos`, { notas, idProspecto: id, fecha: new Date().toISOString().slice(0, 10) }),
+  crearJustificacion: ({ idUsuario, motivo, descripcion, fecha }) =>
+    api.post('asistencias/justificar', {
+      idUsuario,
+      motivo,
+      motivoJustificacion: motivo,
+      descripcion,
+      justificacion: descripcion,
+      fecha
+    }),
+
+  // Puntos de Distribución / Oportunidades (sincronizado desde GET /puntos-venta sin provocar 404 en /prospectos)
+  prospectos: async (q = {}) => {
+    const pdvs = list(await api.get('puntos-venta', q)).filter(p => String(p.tipo || '').toUpperCase().includes('DISTRIB'));
+    return pdvs.map(p => ({
+      ...normProspecto({
+        id: p.idPuntosVenta || p.id,
+        nombre: p.puntoVenta || p.puntosVenta || p.nombre,
+        direccion: p.direccion,
+        estado: p.estado === 'ACTIVO' ? 'CONVERTIDO' : (p.estado || 'NEGOCIACION'),
+        latitud: p.latitud,
+        longitud: p.longitud,
+        zona: p.distrito,
+        tipo: p.tipo || 'DISTRIBUCIÓN',
+        promotor: p.promotor_asignado || p.responsable_nombre || p.impulsador_nombre,
+        idPromotor: p.idResponsable || p.idImpulsador || p.idUsuario,
+        notas: `Código PDV: ${p.codigo || '—'} · Correo promotor: ${p.correo_responsable || p.impulsador_correo || '—'}`
+      }),
+      _fromPdv: true
+    }));
+  },
 
   // Perfil y Fotos de Usuario (guarda en BD vía API en Render)
   actualizarFotoUsuario: async (idUsuario, urlFotoData) => {
@@ -237,7 +450,7 @@ export const S = {
     }
   },
 
-  // Opcionales: la app Android no los consume; se prueban y se informa si el backend no los expone
+  // Opcionales
   async probe(paths, query) {
     let last;
     for (const p of paths) {

@@ -166,7 +166,12 @@ class ApiClient {
 
     const text = await res.text();
     let data = null;
-    try { data = text ? sanitizeApiDates(JSON.parse(text)) : null; } catch { data = { message: text }; }
+    try {
+      data = text ? sanitizeApiDates(JSON.parse(text)) : null;
+    } catch {
+      const isHtml = /^\s*</.test(text || '');
+      data = isHtml ? { rawHtml: text } : { message: text };
+    }
 
     if (!res.ok) {
       const s = res.status;
@@ -176,7 +181,7 @@ class ApiClient {
       else if (s === 404) msg = data?.message || 'Recurso no encontrado (404).';
       else if (s === 409) msg = data?.message || 'Conflicto con el estado actual del recurso (409).';
       else if (s === 422) msg = data?.message || 'Datos inválidos (422).';
-      else if (s >= 500) msg = data?.message || 'Error interno del servidor (5xx).';
+      else if (s >= 500) msg = data?.message || 'Error interno del servidor en Render (500).';
       const e = new Error(msg);
       e.status = s; e.data = data;
       throw e;

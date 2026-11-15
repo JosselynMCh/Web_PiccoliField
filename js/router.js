@@ -2,20 +2,20 @@
  * PICCOLI FIELD - ROUTER SPA POR HASH
  * Cada vista exporta: render(container), refresh() [opcional], destroy() [opcional]
  */
-import { errorHTML } from './ui.js?v=4';
+import { errorHTML } from './ui.js?v=7';
 
 const ROUTES = {
-  supervision: ['Supervisión General', () => import('./views/supervision.js?v=4')],
-  asistencia: ['Asistencia en Vivo', () => import('./views/asistencia.js?v=4')],
-  justificaciones: ['Justificaciones', () => import('./views/justificaciones.js?v=4')],
-  ventas: ['Ventas, Metas y Pedidos', () => import('./views/ventas.js?v=4')],
-  pdv: ['Puntos de Venta y Responsables', () => import('./views/pdv.js?v=4')],
-  stock: ['Stock y Alertas con Evidencia', () => import('./views/stock.js?v=4')],
-  incidencias: ['Incidencias en Campo', () => import('./views/incidencias.js?v=4')],
-  prospectos: ['Prospectos y Oportunidades', () => import('./views/prospectos.js?v=4')],
-  mapa: ['Mapa General', () => import('./views/mapa.js?v=4')],
-  usuarios: ['Personal y Dispositivos', () => import('./views/usuarios.js?v=4')],
-  reportes: ['Reportes y Exportación', () => import('./views/reportes.js?v=4')]
+  supervision: ['Supervisión General', () => import('./views/supervision.js?v=7')],
+  asistencia: ['Asistencia en Vivo', () => import('./views/asistencia.js?v=7')],
+  justificaciones: ['Justificaciones', () => import('./views/justificaciones.js?v=7')],
+  ventas: ['Ventas y Metas de Impulsadores', () => import('./views/ventas.js?v=7')],
+  pdv: ['Puntos de Venta y Responsables', () => import('./views/pdv.js?v=7')],
+  stock: ['Stock y Alertas con Evidencia', () => import('./views/stock.js?v=7')],
+  incidencias: ['Incidencias en Campo', () => import('./views/incidencias.js?v=7')],
+  prospectos: ['Prospectos y Oportunidades', () => import('./views/prospectos.js?v=7')],
+  mapa: ['Mapa General', () => import('./views/mapa.js?v=7')],
+  usuarios: ['Personal y Dispositivos', () => import('./views/usuarios.js?v=7')],
+  reportes: ['Reportes y Exportación', () => import('./views/reportes.js?v=7')]
 };
 
 class Router {

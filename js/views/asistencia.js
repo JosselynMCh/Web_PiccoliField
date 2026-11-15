@@ -135,10 +135,13 @@ function drawMap(body, rows) {
 }
 
 async function detail(r) {
-  openModal(modalHeader(esc(r.nombre), esc(r.sede)) + `<div class="p-5">${loadingHTML('Cargando historial de turnos...')}</div>`, true);
-  let hist = [];
-  try { hist = await S.asistHistorial(r.idUsuario); } catch (e) { /* se muestra vacío */ }
-  const j = r.justificacion;
+  openModal(modalHeader(esc(r.nombre), esc(r.sede)) + `<div class="p-5">${loadingHTML('Cargando historial de turnos y justificaciones...')}</div>`, true);
+  const { data } = await settle({
+    hist: () => (r.idUsuario ? S.asistHistorial(r.idUsuario) : Promise.resolve([])),
+    just: () => (r.idUsuario && !r.justificacion ? S.justificacion(r.idUsuario) : Promise.resolve(null))
+  });
+  const hist = data.hist || [];
+  const j = r.justificacion || data.just?.justificacion || null;
   openModal(modalHeader(esc(r.nombre), `${esc(r.sede)} · ${esc(label(r.estado))}`) + `
     <div class="p-5 space-y-4">
       <div class="grid grid-cols-2 gap-3 text-xs">

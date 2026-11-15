@@ -15,11 +15,19 @@ export function destroy() { map?.remove(); map = null; root = null; }
 
 async function load() {
   busy = true;
-  const { data, errors } = await settle({ pdv: () => S.puntosVenta(), al: S.alertas, per: S.impulsadores });
+  const { data, errors } = await settle({ pdv: () => S.puntosVenta(), supPdv: () => S.pdvSupervision(), al: S.alertas, per: S.impulsadores });
   busy = false;
   if (!root) return;
-  if (!data.pdv) { root.innerHTML = errorHTML(errors.pdv?.message || 'Error', 'btn-retry'); root.querySelector('#btn-retry').onclick = () => render(root); return; }
-  pdvs = data.pdv; alertas = data.al || []; personas = data.per || [];
+  if (!data.pdv && !data.supPdv) { root.innerHTML = errorHTML((errors.pdv || errors.supPdv)?.message || 'Error', 'btn-retry'); root.querySelector('#btn-retry').onclick = () => render(root); return; }
+  const mapPdv = new Map();
+  [...(data.pdv || []), ...(data.supPdv || [])].forEach(p => {
+    const prev = mapPdv.get(p.id) || {};
+    mapPdv.set(p.id, {
+      ...prev,
+      ...Object.fromEntries(Object.entries(p).filter(([, v]) => v !== undefined && v !== null && v !== ''))
+    });
+  });
+  pdvs = [...mapPdv.values()]; alertas = data.al || []; personas = data.per || [];
   frame(); draw();
 }
 
@@ -85,13 +93,13 @@ function drawMap(body, rows) {
 
 async function detail(p) {
   openModal(modalHeader(esc(p.nombre), esc(p.direccion)) + `<div class="p-5">${loadingHTML('Consultando responsable, stock e historial...')}</div>`, true);
-  const { data } = await settle({ det: () => S.pdvDetalle(p.id), hist: () => S.pdvHistorial(p.id) });
+  const { data } = await settle({ det: () => S.pdvDetalle(p.id), stock: () => S.pdvStock(p.id), hist: () => S.pdvHistorial(p.id) });
   const d = data.det || {}, hist = data.hist || [];
-  const prods = d.productos || [];
+  const prods = (data.stock && data.stock.length) ? data.stock : (d.productos || []);
   const respNombre = d.impulsador_nombre || d.promotor_asignado || p.responsable, respId = d.idImpulsador || d.idResponsable || p.idUsuario;
   const respCorreo = d.impulsador_correo || d.correo_responsable || p.correoResponsable || '';
   const al = alertsOf(p);
-  openModal(modalHeader(esc(pick(d, 'puntoVenta') || p.nombre), `${esc(pick(d, 'direccion') || p.direccion)} · ${esc(d.distrito || '')}`) + `
+  openModal(modalHeader(esc(pick(d, 'puntoVenta') || p.nombre), `${esc(pick(d, 'direccion') || p.direccion)} · ${esc(d.distrito || p.distrito || '')}`) + `
     <div class="p-5 space-y-4 text-xs">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Estado</div>${estadoBadge(d.estado || p.estado)}</div>
@@ -105,8 +113,12 @@ async function detail(p) {
         <button id="pv-reasignar" class="${btnPrimary}"><i class="fa-solid fa-user-pen"></i> ${respNombre ? 'Reasignar' : 'Asignar'}</button></div>
       ${al.length ? `<div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900"><b>${al.length} alerta(s) de stock pendientes:</b> ${al.map(a => esc(a.producto)).join(', ')}. <a href="#stock" data-close-modal class="font-black underline">Atender</a></div>` : ''}
       <div class="grid md:grid-cols-2 gap-4">
-        <div><h4 class="font-black mb-2">Productos y stock mínimo</h4>${prods.length ? `<div class="border border-stone-200 rounded-xl divide-y divide-stone-100 max-h-60 overflow-y-auto">${prods.map(x => `<div class="p-2.5 flex justify-between gap-2"><span class="truncate">${esc(x.producto)} <span class="text-stone-400">${esc(x.sku || '')}</span></span><b>mín. ${x.stock_minimo ?? '—'}</b></div>`).join('')}</div>` : emptyHTML('Sin productos asociados')}</div>
-        <div><h4 class="font-black mb-2">Historial de responsables</h4>${hist.length ? `<div class="border border-stone-200 rounded-xl divide-y divide-stone-100 max-h-60 overflow-y-auto">${hist.map(h => `<div class="p-2.5"><div class="flex justify-between"><b>${esc(h.impulsador_nombre || '—')}</b>${h.es_actual ? badge('Actual', 'ok') : ''}</div><div class="text-stone-500">${esc(h.impulsador_rol || '')} · ${esc(fmtDate(h.fecha_inicio))} → ${esc(h.fecha_fin ? fmtDate(h.fecha_fin) : 'actual')}</div>${h.motivo ? `<div class="text-stone-500 italic">“${esc(h.motivo)}”</div>` : ''}${h.registrado_por ? `<div class="text-[10px] text-stone-400">Registrado por ${esc(h.registrado_por)}</div>` : ''}</div>`).join('')}</div>` : emptyHTML('Sin historial de asignaciones')}</div></div>
+        <div><h4 class="font-black mb-2">Stock actual de productos en PDV</h4>${prods.length ? `<div class="border border-stone-200 rounded-xl divide-y divide-stone-100 max-h-60 overflow-y-auto">${prods.map(x => {
+          const stActual = pick(x, 'stock_actual', 'stock', 'cantidad');
+          const stMin = pick(x, 'stock_minimo', 'minimo');
+          return `<div class="p-2.5 flex justify-between items-center gap-2"><span class="truncate">${esc(pick(x, 'producto', 'nombre_producto', 'nombre'))} <span class="text-stone-400">${esc(x.sku || x.codigo_barras || '')}</span></span><span class="whitespace-nowrap">${stActual !== undefined ? `<b class="${num(stActual) <= num(stMin, 0) ? 'text-rose-600' : 'text-emerald-700'}">stock: ${stActual}</b> · ` : ''}<b>mín. ${stMin ?? '—'}</b></span></div>`;
+        }).join('')}</div>` : emptyHTML('Sin productos asociados')}</div>
+        <div><h4 class="font-black mb-2">Historial de responsables</h4>${hist.length ? `<div class="border border-stone-200 rounded-xl divide-y divide-stone-100 max-h-60 overflow-y-auto">${hist.map(h => `<div class="p-2.5"><div class="flex justify-between"><b>${esc(h.impulsador_nombre || h.nombre || '—')}</b>${h.es_actual ? badge('Actual', 'ok') : ''}</div><div class="text-stone-500">${esc(h.impulsador_rol || h.rol || '')} · ${esc(fmtDate(h.fecha_inicio))} → ${esc(h.fecha_fin ? fmtDate(h.fecha_fin) : 'actual')}</div>${h.motivo ? `<div class="text-stone-500 italic">“${esc(h.motivo)}”</div>` : ''}${h.registrado_por ? `<div class="text-[10px] text-stone-400">Registrado por ${esc(h.registrado_por)}</div>` : ''}</div>`).join('')}</div>` : emptyHTML('Sin historial de asignaciones')}</div></div>
     </div>`, true);
   document.getElementById('pv-reasignar')?.addEventListener('click', () => reassign(p, d));
 }

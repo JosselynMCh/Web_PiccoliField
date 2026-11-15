@@ -107,8 +107,7 @@ export class AuthService {
     }
   }
 
-  static async logout() {
-    try { await api.post('auth/logout', {}); } catch { /* el backend puede no exponer logout */ }
+  static logout() {
     api.clearSession();
     window.location.href = 'index.html?msg=logged_out';
   }

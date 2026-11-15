@@ -14,7 +14,9 @@ const REPORTS = {
   ventas: { icon: 'fa-sack-dollar', title: 'Ventas e impulsadores', desc: 'Ranking y avance frente a la meta', dateField: null,
     fetch: async () => (await S.vendedores()).map(v => ({ posicion: v.posicion, impulsador: v.nombre, punto_venta: v.local, unidades_vendidas: v.vendido, meta: v.meta, avance_pct: v.meta ? Math.round(v.vendido / v.meta * 100) : '' })) },
   pdv: { icon: 'fa-store', title: 'Puntos de venta', desc: 'Catálogo de PDV con tipo, estado y responsable', dateField: null,
-    fetch: async () => (await S.puntosVenta()).map(p => ({ id: p.id, codigo: p.codigo, nombre: p.nombre, tipo: p.tipo, estado: p.estado, direccion: p.direccion, latitud: p.lat, longitud: p.lng, radio_geocerca: p.radio })) }
+    fetch: async () => (await S.puntosVenta()).map(p => ({ id: p.id, codigo: p.codigo, nombre: p.nombre, tipo: p.tipo, estado: p.estado, direccion: p.direccion, latitud: p.lat, longitud: p.lng, radio_geocerca: p.radio })) },
+  incidencias: { icon: 'fa-triangle-exclamation', title: 'Incidencias', desc: 'Incidencias reportadas en campo y su estado', dateField: 'fecha',
+    fetch: async () => (await S.incidencias()).map(i => ({ id: i.id, tipo: i.tipo, punto_venta: i.local, reportado_por: i.usuario, severidad: i.sev, estado: i.estado, fecha: i.fecha ? fmtDateTime(i.fecha) : '—', descripcion: i.desc, comentario_atencion: i.comentario || '—' })) }
 };
 
 export async function render(container) {

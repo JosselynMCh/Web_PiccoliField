@@ -1,6 +1,6 @@
 import { S, settle } from '../data.js';
 import { AuthService } from '../auth.js';
-import { esc, num, kpi, card, pageHeader, loadingHTML, errorHTML, emptyHTML, estadoBadge, badge, label, avatar, progressBar, pick, fmtDateTime,
+import { esc, num, kpi, card, pageHeader, loadingHTML, errorHTML, emptyHTML, estadoBadge, badge, label, avatar, progressBar, pick, fmtDateTime, fmtDate,
   inputCls, btnGhost, btnPrimary, openModal, closeModal, modalHeader, toast, debounce, getCustomAvatar, setCustomAvatar } from '../ui.js';
 
 let root, people = [], pdvs = [], busy = false;
@@ -137,9 +137,10 @@ async function ficha(p) {
   openModal(modalHeader(esc(p.nombre), esc(p.rol)) + `<div class="p-5">${loadingHTML('Cargando ficha...')}</div>`, true);
   const { data } = await settle({
     det: () => (p.rol === 'IMPULSADOR' && p.id ? S.vendedorDetalle(p.id) : Promise.resolve({})),
-    hist: () => (p.id ? S.asistHistorial(p.id) : Promise.resolve([]))
+    hist: () => (p.id ? S.asistHistorial(p.id) : Promise.resolve([])),
+    asig: () => (p.id ? S.vendedorHistorialAsignaciones(p.id) : Promise.resolve([]))
   });
-  const d = data.det || {}, hist = data.hist || [];
+  const d = data.det || {}, hist = data.hist || [], asig = data.asig || [];
   const customFoto = getCustomAvatar(p.id, p.nombre);
   openModal(modalHeader(esc(p.nombre), `${esc(p.rol)} ${p.correo ? '· ' + esc(p.correo) : ''}`) + `
     <div class="p-5 space-y-4 text-xs">
@@ -149,7 +150,7 @@ async function ficha(p) {
           <div class="min-w-0">
             <div class="text-sm font-black truncate">${esc(p.nombre)}</div>
             <div class="text-stone-500 truncate">${esc(p.local || 'Sin sede asignada')}</div>
-            <div class="text-[10px] text-stone-400 font-mono truncate mt-0.5">url_foto API: ${esc(p.foto || (p.id ? `supervision/impulsadores/${p.id}/foto` : 'uploads/perfiles/default'))}</div>
+            <div class="text-[10px] text-stone-400 font-mono truncate mt-0.5">url_foto API: ${esc(p.foto || (p.id ? `usuarios/${p.id}/foto` : 'uploads/perfiles/default'))}</div>
           </div>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -164,7 +165,10 @@ async function ficha(p) {
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Meta</div><div class="text-lg font-black">${p.meta || '—'}</div></div>
         <div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Vendido</div><div class="text-lg font-black">${num(pick(d, 'cantidadVendida', 'monto_vendido'), num(p.vendido))}</div></div>
         <div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Logro</div><div class="text-lg font-black">${d.porcentaje_logro != null ? Math.round(d.porcentaje_logro) + '%' : '—'}</div></div></div>
-      <div><h4 class="font-black mb-2">Últimos turnos</h4>${hist.length ? `<div class="max-h-44 overflow-y-auto border border-stone-200 rounded-xl divide-y divide-stone-100">${hist.slice(0, 30).map(h => `<div class="p-2.5 flex justify-between">${badge(h.tipo || '—', h.tipo === 'INGRESO' ? 'info' : 'neutral')}<span>${fmtDateTime(h.fecha_hora)}</span></div>`).join('')}</div>` : emptyHTML('Sin marcaciones registradas')}</div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div><h4 class="font-black mb-2">Últimos turnos</h4>${hist.length ? `<div class="max-h-44 overflow-y-auto border border-stone-200 rounded-xl divide-y divide-stone-100">${hist.slice(0, 30).map(h => `<div class="p-2.5 flex justify-between">${badge(h.tipo || '—', h.tipo === 'INGRESO' ? 'info' : 'neutral')}<span>${fmtDateTime(h.fecha_hora)}</span></div>`).join('')}</div>` : emptyHTML('Sin marcaciones registradas')}</div>
+        <div><h4 class="font-black mb-2">Historial de asignaciones</h4>${asig.length ? `<div class="max-h-44 overflow-y-auto border border-stone-200 rounded-xl divide-y divide-stone-100">${asig.map(a => `<div class="p-2.5 flex justify-between gap-2"><span class="font-bold truncate">${esc(a.puntoVenta || a.local_nombre || a.local || '—')}</span><span class="whitespace-nowrap">${esc(fmtDate(a.fecha_inicio))} → ${esc(a.fecha_fin ? fmtDate(a.fecha_fin) : 'actual')}</span></div>`).join('')}</div>` : emptyHTML('Sin asignaciones previas')}</div>
+      </div>
       ${p.rol === 'IMPULSADOR' ? `<div class="p-3 rounded-xl bg-brand-ivory border border-brand-gold/30"><h4 class="font-black mb-2">Reasignar a un punto de venta</h4>
         <div class="flex flex-wrap gap-2"><select id="fu-pdv" class="${inputCls} flex-1"><option value="">Seleccione PDV...</option>${pdvs.filter(x => !x.tipo.startsWith('DIST')).map(x => `<option value="${x.id}">${esc(x.nombre)}</option>`).join('')}</select>
         <input id="fu-mot" class="${inputCls} flex-1" placeholder="Motivo del cambio"><button id="fu-ok" class="${btnPrimary}">Reasignar</button></div><div id="fu-err" class="text-rose-600 font-bold mt-1 hidden"></div></div>` : ''}
@@ -176,7 +180,7 @@ async function ficha(p) {
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         const cv = document.createElement('canvas');
         const max = 256;
         const scale = Math.min(1, max / Math.max(img.width, img.height));
