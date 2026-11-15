@@ -57,13 +57,14 @@ export class AuthService {
 
     if (!token) throw new Error(r?.message || 'El servidor no devolvió un token de sesión.');
 
-    // Si el login no trae el rol, consultarlo en GET /perfil con el token recibido
-    if (!rol) {
+    // Consultar GET /perfil para asegurar idUsuario, nombre completo y url_foto / foto_perfil de la tabla USUARIOS
+    api.setToken(token);
+    if (!rol || (!perfil.url_foto && !perfil.foto_perfil) || !(perfil.idUsuario ?? perfil.id_usuario ?? perfil.id)) {
       try {
-        api.setToken(token);
         const p = await api.get('perfil');
-        perfil = p?.data || p || {};
-        rol = String(perfil.rol || perfil.role || '').toUpperCase();
+        const pData = p?.data || p || {};
+        perfil = { ...u, ...pData };
+        rol = String(perfil.rol || perfil.role || rol || '').toUpperCase();
       } catch { /* se valida abajo */ }
     }
 
@@ -76,11 +77,34 @@ export class AuthService {
     const user = {
       id: perfil.idUsuario ?? perfil.id_usuario ?? perfil.usuarioId ?? perfil.id ?? null,
       nombre, rol, correo: perfil.correo || perfil.email || correo,
+      foto: perfil.url_foto || perfil.foto_perfil || perfil.foto || '',
       sede: perfil.sede || '', distrito: perfil.distrito || ''
     };
     api.setToken(token);
     sessionStorage.setItem(CONFIG.USER_KEY, JSON.stringify(user));
     return { token, user };
+  }
+
+  static async syncProfile() {
+    try {
+      const cur = this.getUser() || {};
+      const p = await api.get('perfil');
+      const d = p?.data || p || {};
+      if (!d || typeof d !== 'object') return cur;
+      const nombre = [d.nombres || d.nombre, d.apePaterno, d.apeMaterno].filter(Boolean).join(' ') || cur.nombre || '';
+      const updated = {
+        ...cur,
+        id: d.idUsuario ?? d.id_usuario ?? d.usuarioId ?? d.id ?? cur.id ?? null,
+        nombre: nombre || cur.nombre,
+        correo: d.correo || d.email || cur.correo || '',
+        rol: String(d.rol || cur.rol || 'ADMINISTRADOR').toUpperCase(),
+        foto: d.url_foto || d.foto_perfil || d.foto || cur.foto || ''
+      };
+      sessionStorage.setItem(CONFIG.USER_KEY, JSON.stringify(updated));
+      return updated;
+    } catch {
+      return this.getUser();
+    }
   }
 
   static async logout() {

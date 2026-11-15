@@ -64,7 +64,8 @@ export function normPdv(p) {
     idUsuario: pick(p, 'idResponsable', 'idUsuario', 'idImpulsador'),
     responsable: pick(p, 'promotor_asignado', 'impulsador_nombre', 'responsable_nombre', 'responsable', 'impulsador'),
     correoResponsable: pick(p, 'correo_responsable', 'impulsador_correo'),
-    rolResponsable: pick(p, 'rol_responsable')
+    rolResponsable: pick(p, 'rol_responsable'),
+    fotoResponsable: pick(p, 'url_foto', 'foto_perfil', 'responsable_foto', 'impulsador_foto')
   };
 }
 
@@ -125,7 +126,8 @@ export function normVendedor(v) {
     local: pick(v, 'local', 'local_actual', 'local_pertenece') || '—',
     vendido: num(pick(v, 'cantidadVendida', 'cantidad_vendida', 'monto_vendido', 'cantVentas')),
     meta: num(pick(v, 'meta_asignada', 'meta_ventas', 'meta')),
-    posicion: pick(v, 'posicion')
+    posicion: pick(v, 'posicion'),
+    foto: pick(v, 'url_foto', 'foto_perfil', 'foto')
   };
 }
 

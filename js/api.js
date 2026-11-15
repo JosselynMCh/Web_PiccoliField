@@ -70,6 +70,7 @@ class ApiClient {
   constructor() {
     this.etags = new Map();
     this.cache = new Map();
+    this.blobCache = new Map();
     this.useEtag = true;
     this.preferLocalProxy = false;
   }
@@ -193,31 +194,54 @@ class ApiClient {
   put(endpoint, body = {}, opts = {}) { return this.request(endpoint, { ...opts, method: 'PUT', body }); }
   delete(endpoint, opts = {}) { return this.request(endpoint, { ...opts, method: 'DELETE' }); }
 
-  /** Descarga un recurso binario protegido (foto) con JWT y devuelve un object URL */
+  /** Descarga un recurso binario protegido (foto) con JWT y devuelve un object URL cacheado */
   async blobUrl(endpointOrUrl) {
-    const isAbs = /^https?:\/\//i.test(endpointOrUrl);
-    const url = isAbs ? endpointOrUrl : this.buildUrl(endpointOrUrl);
-    const headers = {};
-    const token = this.getToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
-    let res;
-    try {
-      res = await fetch(url, { headers });
-    } catch {
-      if (!this.preferLocalProxy) {
-        this.preferLocalProxy = true;
-        res = await fetch(this.buildUrl(endpointOrUrl), { headers });
-      } else throw new Error('Red no disponible');
-    }
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const type = res.headers.get('content-type') || '';
-    if (type.includes('application/json')) {
-      const j = await res.json();
-      const v = j?.data?.url || j?.data?.foto || j?.data || j?.url;
-      if (typeof v === 'string') return v.startsWith('data:') || /^https?:/.test(v) ? v : `data:image/jpeg;base64,${v}`;
-      throw new Error('Sin imagen');
-    }
-    return URL.createObjectURL(await res.blob());
+    if (!endpointOrUrl) throw new Error('Sin ruta de imagen');
+    if (this.blobCache.has(endpointOrUrl)) return this.blobCache.get(endpointOrUrl);
+
+    const p = (async () => {
+      const isAbs = /^https?:\/\//i.test(endpointOrUrl);
+      const clean = endpointOrUrl.replace(/^\/+/, '');
+      const origin = this.getEffectiveBaseUrl().replace(/\/api$/i, '');
+      const url = isAbs
+        ? endpointOrUrl
+        : clean.startsWith('uploads/')
+          ? `${origin}/${clean}`
+          : this.buildUrl(clean);
+      const headers = {};
+      const token = this.getToken();
+      if (token) headers.Authorization = `Bearer ${token}`;
+      let res;
+      try {
+        res = await fetch(url, { headers });
+      } catch {
+        if (!this.preferLocalProxy) {
+          this.preferLocalProxy = true;
+          const retryOrigin = this.getEffectiveBaseUrl().replace(/\/api$/i, '');
+          const retryUrl = isAbs ? endpointOrUrl : clean.startsWith('uploads/') ? `${retryOrigin}/${clean}` : this.buildUrl(clean);
+          res = await fetch(retryUrl, { headers });
+        } else throw new Error('Red no disponible');
+      }
+      // Si falló /uploads/... en la raíz, intentar bajo /api/uploads/...
+      if (!res.ok && !isAbs && clean.startsWith('uploads/')) {
+        res = await fetch(this.buildUrl(clean), { headers });
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const type = res.headers.get('content-type') || '';
+      if (type.includes('application/json')) {
+        const j = await res.json();
+        const v = j?.data?.url_foto || j?.data?.foto_perfil || j?.data?.url || j?.data?.foto || j?.data || j?.url;
+        if (typeof v === 'string') return v.startsWith('data:') || /^https?:/.test(v) ? v : `data:image/jpeg;base64,${v}`;
+        throw new Error('Sin imagen');
+      }
+      const blob = await res.blob();
+      if (!blob.size) throw new Error('Imagen vacía');
+      return URL.createObjectURL(blob);
+    })();
+
+    this.blobCache.set(endpointOrUrl, p);
+    p.catch(() => this.blobCache.delete(endpointOrUrl));
+    return p;
   }
 }
 

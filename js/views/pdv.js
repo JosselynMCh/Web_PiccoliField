@@ -59,7 +59,7 @@ function draw() {
     <div class="bg-white rounded-2xl border border-stone-200 p-4 shadow-xs flex flex-col gap-2">
       <div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="text-[10px] font-bold text-stone-400">${esc(p.codigo || 'PDV-' + p.id)}</div><div class="text-sm font-black truncate">${esc(p.nombre)}</div></div>${estadoBadge(p.estado || '—')}</div>
       <div class="text-xs text-stone-500 truncate"><i class="fa-solid fa-location-dot mr-1"></i>${esc(p.direccion || 'Sin dirección')}${p.distrito ? ` · <b>${esc(p.distrito)}</b>` : ''}</div>
-      <div class="text-xs text-stone-700 truncate"><i class="fa-solid fa-user-check text-brand-gold mr-1"></i><b>${esc(p.responsable || 'Sin responsable')}</b>${p.rolResponsable ? ` <span class="text-[10px] text-stone-400">(${esc(p.rolResponsable)})</span>` : ''}</div>
+      <div class="text-xs text-stone-700 flex items-center gap-2 min-w-0">${avatar(p.responsable || '?', { id: p.idUsuario, src: p.fotoResponsable, size: 'w-6 h-6 text-[10px]' })}<div class="truncate"><b>${esc(p.responsable || 'Sin responsable')}</b>${p.rolResponsable ? ` <span class="text-[10px] text-stone-400">(${esc(p.rolResponsable)})</span>` : ''}</div></div>
       <div class="flex flex-wrap gap-1.5">${p.tipo ? badge(tipoOf(p), tipoOf(p) === 'VENTA' ? 'brand' : 'info') : ''}${al ? badge(`${al} alerta${al > 1 ? 's' : ''} de stock`, 'bad') : ''}</div>
       <button data-i="${i}" class="mt-2 px-3 py-2 rounded-xl bg-brand-chocolate text-white text-xs font-bold">Ver responsable, stock e historial</button></div>`; }).join('')}</div>`;
   body.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => detail(rows[+b.dataset.i]));
@@ -99,7 +99,7 @@ async function detail(p) {
         <div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Geocerca</div><b>${num(d.radio_geocerca, p.radio) || '—'} m</b></div>
         <div class="p-3 rounded-xl bg-stone-50"><div class="text-[10px] uppercase font-bold text-stone-500">Coordenadas</div>${validCoord(d.latitud ?? p.lat, d.longitud ?? p.lng) ? `<a class="text-sky-700 font-bold" target="_blank" href="${mapsLink(d.latitud ?? p.lat, d.longitud ?? p.lng)}">Cómo llegar</a>` : '—'}</div></div>
       <div class="p-4 rounded-xl border border-brand-gold/40 bg-brand-ivory flex flex-wrap sm:flex-nowrap items-center gap-3">
-        ${avatar(respNombre || 'Sin asignar', { auth: respId ? `supervision/impulsadores/${respId}/foto` : '', size: 'w-12 h-12' })}
+        ${avatar(respNombre || 'Sin asignar', { id: respId, src: d.url_foto || d.foto_perfil || p.fotoResponsable, size: 'w-12 h-12' })}
         <div class="flex-1 min-w-0"><div class="text-[10px] uppercase font-bold text-stone-500">Responsable actual</div><div class="text-sm font-black truncate">${esc(respNombre || 'Sin responsable asignado')}</div>
           <div class="text-stone-500 truncate">${esc(respCorreo)} ${d.impulsador_meta ? `· Meta: ${d.impulsador_meta}` : ''}</div></div>
         <button id="pv-reasignar" class="${btnPrimary}"><i class="fa-solid fa-user-pen"></i> ${respNombre ? 'Reasignar' : 'Asignar'}</button></div>

@@ -81,7 +81,7 @@ function draw() {
         ${vend.length ? vend.slice(0, 8).map((v, i) => `
           <div class="flex items-center gap-3">
             <span class="w-6 text-center font-black ${i < 3 ? 'text-brand-gold' : 'text-stone-400'}">${i + 1}</span>
-            ${avatar(v.nombre, { auth: v.id ? `supervision/impulsadores/${v.id}/foto` : '' })}
+            ${avatar(v.nombre, { id: v.id, src: v.foto })}
             <div class="flex-1 min-w-0"><div class="flex justify-between gap-2"><span class="text-xs font-bold truncate">${esc(v.nombre)}</span><span class="text-xs font-black">${v.vendido} uds</span></div>
               <div class="text-[10px] text-stone-500 truncate mb-1">${esc(v.local)}</div>${v.meta ? progressBar(v.vendido, v.meta) : '<span class="text-[10px] text-stone-400">Sin meta asignada</span>'}</div>
           </div>`).join('') : emptyHTML('Aún no hay ventas registradas.')}

@@ -54,7 +54,7 @@ function drawRanking() {
     ${card(`<div class="overflow-x-auto"><table class="w-full text-xs"><thead class="bg-stone-50 text-[10px] uppercase text-stone-500"><tr><th class="p-3 w-10">#</th><th class="p-3 text-left">Impulsador</th><th class="p-3 text-left">Punto de venta</th><th class="p-3 text-right">Vendido</th><th class="p-3 w-48 text-left">Avance vs meta</th><th></th></tr></thead>
       <tbody class="divide-y divide-stone-100">${vend.map((v, i) => `<tr class="hover:bg-brand-ivory/50">
         <td class="p-3 text-center font-black ${i < 3 ? 'text-brand-gold' : 'text-stone-400'}">${i + 1}</td>
-        <td class="p-3"><div class="flex items-center gap-2">${avatar(v.nombre, { auth: v.id ? `supervision/impulsadores/${v.id}/foto` : '' })}<b>${esc(v.nombre)}</b></div></td>
+        <td class="p-3"><div class="flex items-center gap-2">${avatar(v.nombre, { id: v.id, src: v.foto })}<b>${esc(v.nombre)}</b></div></td>
         <td class="p-3">${esc(v.local)}</td><td class="p-3 text-right font-black">${v.vendido}</td>
         <td class="p-3">${v.meta ? progressBar(v.vendido, v.meta) : '<span class="text-stone-400">Sin meta</span>'}</td>
         <td class="p-3 text-right"><button data-i="${i}" class="px-2.5 py-1 rounded-lg bg-brand-chocolate text-white text-[11px] font-bold">Detalle</button></td></tr>`).join('')}</tbody></table></div>`, 'lg:col-span-2')}

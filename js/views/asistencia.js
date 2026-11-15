@@ -97,7 +97,7 @@ function draw() {
     <th class="p-3 text-left">Colaborador</th><th class="p-3 text-left">Sede / Punto</th><th class="p-3 text-left">Tipo</th><th class="p-3 text-left">Estado</th>
     <th class="p-3 text-left">Hora</th><th class="p-3 text-left">Tardanza</th><th class="p-3 text-left">Ubicación</th><th class="p-3"></th></tr></thead><tbody class="divide-y divide-stone-100">
     ${rows.map((r, i) => `<tr class="hover:bg-brand-ivory/50 ${observada(r) ? 'bg-rose-50/40' : ''}">
-      <td class="p-3"><div class="flex items-center gap-2">${avatar(r.nombre, { src: r.foto })}<span class="font-bold">${esc(r.nombre)}</span></div></td>
+      <td class="p-3"><div class="flex items-center gap-2">${avatar(r.nombre, { id: r.idUsuario, src: r.foto })}<span class="font-bold">${esc(r.nombre)}</span></div></td>
       <td class="p-3">${esc(r.sede)}</td><td class="p-3">${r.tipo ? badge(r.tipo, r.tipo === 'INGRESO' ? 'info' : 'neutral') : '—'}</td>
       <td class="p-3">${estadoBadge(r.estado === 'A_TIEMPO' ? 'A TIEMPO' : r.estado)} ${r.justificacion ? badge('Justif.: ' + label(r.justificacion.estado), 'brand') : ''}</td>
       <td class="p-3 whitespace-nowrap">${fmtDateTime(r.fecha)}</td><td class="p-3">${r.minutos ? r.minutos + ' min' : '—'}</td>

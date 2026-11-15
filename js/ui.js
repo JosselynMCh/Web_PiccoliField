@@ -200,8 +200,35 @@ export function toast(msg, type = 'success') {
   toast._t = setTimeout(() => t.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none'), 3800);
 }
 
-/* ---------- Imágenes (URL directa, ruta relativa o endpoint protegido con JWT) ---------- */
+/* ---------- Imágenes (URL directa, ruta relativa url_foto o endpoint protegido con JWT) ---------- */
 const apiOrigin = () => api.getEffectiveBaseUrl().replace(/\/api$/i, '');
+const CUSTOM_AVATARS_KEY = 'piccoli_custom_avatars_v1';
+
+export function getCustomAvatar(id, name = '') {
+  try {
+    const map = JSON.parse(localStorage.getItem(CUSTOM_AVATARS_KEY) || '{}');
+    if (id !== undefined && id !== null && id !== '' && map[`id:${id}`]) return map[`id:${id}`];
+    const key = String(name || '').trim().toLowerCase();
+    if (key && map[`name:${key}`]) return map[`name:${key}`];
+  } catch { /* ignore */ }
+  return '';
+}
+
+export function setCustomAvatar({ id, name }, dataUrlOrPath) {
+  try {
+    const map = JSON.parse(localStorage.getItem(CUSTOM_AVATARS_KEY) || '{}');
+    if (id !== undefined && id !== null && id !== '') {
+      if (dataUrlOrPath) map[`id:${id}`] = dataUrlOrPath;
+      else delete map[`id:${id}`];
+    }
+    const key = String(name || '').trim().toLowerCase();
+    if (key) {
+      if (dataUrlOrPath) map[`name:${key}`] = dataUrlOrPath;
+      else delete map[`name:${key}`];
+    }
+    localStorage.setItem(CUSTOM_AVATARS_KEY, JSON.stringify(map));
+  } catch { /* ignore */ }
+}
 
 export function resolveImg(v) {
   if (!v || typeof v !== 'string') return '';
@@ -212,35 +239,74 @@ export function resolveImg(v) {
 
 /** <img data-src="url|ruta"> o <img data-auth="endpoint"> -> carga con JWT si hace falta */
 export function hydrateImages(root = document) {
+  if (!root || !root.querySelectorAll) return;
   root.querySelectorAll('img[data-auth],img[data-src]').forEach(async (img) => {
     if (img.dataset.loaded) return;
     img.dataset.loaded = '1';
-    const fallback = () => {
-      const wrap = img.closest('[data-img-wrap]');
-      img.style.display = 'none';
-      if (wrap) wrap.querySelector('[data-img-fallback]')?.classList.remove('hidden');
+    const wrap = img.closest('[data-img-wrap]');
+    const fb = wrap?.querySelector('[data-img-fallback]');
+    const showImg = (url) => {
+      img.onload = () => {
+        img.classList.remove('hidden');
+        img.style.display = '';
+        fb?.classList.add('hidden');
+      };
+      img.src = url;
     };
-    try {
-      if (img.dataset.auth) img.src = await api.blobUrl(img.dataset.auth);
-      else {
-        const u = resolveImg(img.dataset.src);
+    const fallback = () => {
+      img.classList.add('hidden');
+      img.style.display = 'none';
+      fb?.classList.remove('hidden');
+    };
+
+    const rawSrc = (img.dataset.src || '').trim();
+    const rawAuth = (img.dataset.auth || '').trim();
+
+    // 1) Si viene un data: URL personalizado o URL absoluta directa
+    if (rawSrc.startsWith('data:') || rawSrc.startsWith('blob:')) {
+      return showImg(rawSrc);
+    }
+
+    // 2) Intentar endpoint autenticado (/api/supervision/impulsadores/{id}/foto)
+    if (rawAuth) {
+      try {
+        const blobUrl = await api.blobUrl(rawAuth);
+        if (blobUrl) return showImg(blobUrl);
+      } catch { /* continúa con data-src si existe */ }
+    }
+
+    // 3) Intentar ruta url_foto / foto_perfil (ej. uploads/perfiles/...)
+    if (rawSrc) {
+      try {
+        const blobUrl = await api.blobUrl(rawSrc);
+        if (blobUrl) return showImg(blobUrl);
+      } catch {
+        const u = resolveImg(rawSrc);
         if (!u) return fallback();
-        // Intento directo; si falla (requiere JWT) se reintenta autenticado
-        img.onerror = async () => {
-          img.onerror = fallback;
-          try { img.src = await api.blobUrl(u); } catch { fallback(); }
-        };
-        img.src = u;
+        img.onerror = fallback;
+        return showImg(u);
       }
-    } catch { fallback(); }
+    }
+
+    fallback();
   });
 }
 
-export function avatar(name, { auth, src, size = 'w-9 h-9' } = {}) {
-  const has = auth || src;
+export function avatar(name, { id, auth, src, size = 'w-9 h-9' } = {}) {
+  const custom = getCustomAvatar(id, name);
+  const effectiveSrc = custom || src || '';
+  const effectiveAuth = custom ? '' : (auth || (id ? `supervision/impulsadores/${id}/foto` : ''));
+  const has = effectiveAuth || effectiveSrc;
   return `<span data-img-wrap class="relative inline-flex ${size} rounded-full overflow-hidden bg-brand-gold text-brand-dark font-black text-xs items-center justify-center shrink-0">
-    ${has ? `<img ${auth ? `data-auth="${esc(auth)}"` : `data-src="${esc(src)}"`} class="w-full h-full object-cover" alt="">` : ''}
-    <span data-img-fallback class="${has ? 'hidden' : ''}">${esc(initials(name))}</span></span>`;
+    ${has ? `<img ${effectiveAuth ? `data-auth="${esc(effectiveAuth)}"` : ''} ${effectiveSrc ? `data-src="${esc(effectiveSrc)}"` : ''} class="w-full h-full object-cover hidden" alt="">` : ''}
+    <span data-img-fallback>${esc(initials(name))}</span></span>`;
+}
+
+// Observador automático para hidratar cualquier imagen o avatar inyectado dinámicamente en las vistas
+if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
+  const obs = new MutationObserver(() => hydrateImages(document));
+  if (document.body) obs.observe(document.body, { childList: true, subtree: true });
+  else document.addEventListener('DOMContentLoaded', () => obs.observe(document.body, { childList: true, subtree: true }));
 }
 
 /* ---------- Varios ---------- */

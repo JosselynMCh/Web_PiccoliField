@@ -57,7 +57,7 @@ function draw() {
   if (!rows.length) { body.innerHTML = card(emptyHTML('No hay justificaciones registradas con estos filtros.', 'fa-file-signature')); return; }
   body.innerHTML = `<div class="grid md:grid-cols-2 xl:grid-cols-3 gap-3">${rows.map((r, i) => `
     <div class="bg-white rounded-2xl border border-stone-200 p-4 shadow-xs flex flex-col gap-3">
-      <div class="flex items-center gap-2">${avatar(r.nombre, { src: r.foto })}<div class="flex-1 min-w-0"><div class="text-sm font-black truncate">${esc(r.nombre)}</div><div class="text-[11px] text-stone-500 truncate">${esc(r.sede)}</div></div>${estadoBadge(r.justificacion.estado)}</div>
+      <div class="flex items-center gap-2">${avatar(r.nombre, { id: r.idUsuario, src: r.foto })}<div class="flex-1 min-w-0"><div class="text-sm font-black truncate">${esc(r.nombre)}</div><div class="text-[11px] text-stone-500 truncate">${esc(r.sede)}</div></div>${estadoBadge(r.justificacion.estado)}</div>
       <div class="text-xs"><div class="font-bold">${esc(r.justificacion.motivo || 'Sin motivo')}</div><div class="text-stone-600 line-clamp-3">${esc(r.justificacion.descripcion || '')}</div></div>
       <div class="text-[11px] text-stone-500 flex justify-between"><span>${estadoLbl(r)}</span><span>${fmtDateTime(r.justificacion.fecha || r.fecha)}</span></div>
       <button data-i="${i}" class="mt-auto px-3 py-2 rounded-xl bg-brand-chocolate text-white text-xs font-bold">${r.justificacion.estado === 'PENDIENTE' ? 'Revisar' : 'Ver detalle'}</button>
