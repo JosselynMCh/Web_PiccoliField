@@ -1,6 +1,6 @@
 import { S, settle, normPersona } from '../data.js';
 import { CONFIG } from '../config.js';
-import { esc, num, kpi, card, pageHeader, loadingHTML, errorHTML, emptyHTML, estadoBadge, badge, label, avatar, pick, dateOnly, validCoord, mapsLink,
+import { esc, num, kpi, card, pageHeader, loadingHTML, errorHTML, emptyHTML, estadoBadge, badge, label, avatar, pick, fmtDate, validCoord, mapsLink,
   inputCls, btnGhost, btnPrimary, openModal, closeModal, modalHeader, toast, debounce } from '../ui.js';
 
 let root, pdvs = [], alertas = [], personas = [], map, busy = false, view = 'lista';
@@ -106,7 +106,7 @@ async function detail(p) {
       ${al.length ? `<div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900"><b>${al.length} alerta(s) de stock pendientes:</b> ${al.map(a => esc(a.producto)).join(', ')}. <a href="#stock" data-close-modal class="font-black underline">Atender</a></div>` : ''}
       <div class="grid md:grid-cols-2 gap-4">
         <div><h4 class="font-black mb-2">Productos y stock mínimo</h4>${prods.length ? `<div class="border border-stone-200 rounded-xl divide-y divide-stone-100 max-h-60 overflow-y-auto">${prods.map(x => `<div class="p-2.5 flex justify-between gap-2"><span class="truncate">${esc(x.producto)} <span class="text-stone-400">${esc(x.sku || '')}</span></span><b>mín. ${x.stock_minimo ?? '—'}</b></div>`).join('')}</div>` : emptyHTML('Sin productos asociados')}</div>
-        <div><h4 class="font-black mb-2">Historial de responsables</h4>${hist.length ? `<div class="border border-stone-200 rounded-xl divide-y divide-stone-100 max-h-60 overflow-y-auto">${hist.map(h => `<div class="p-2.5"><div class="flex justify-between"><b>${esc(h.impulsador_nombre || '—')}</b>${h.es_actual ? badge('Actual', 'ok') : ''}</div><div class="text-stone-500">${esc(h.impulsador_rol || '')} · ${esc(dateOnly(h.fecha_inicio))} → ${esc(dateOnly(h.fecha_fin) || 'actual')}</div>${h.motivo ? `<div class="text-stone-500 italic">“${esc(h.motivo)}”</div>` : ''}${h.registrado_por ? `<div class="text-[10px] text-stone-400">Registrado por ${esc(h.registrado_por)}</div>` : ''}</div>`).join('')}</div>` : emptyHTML('Sin historial de asignaciones')}</div></div>
+        <div><h4 class="font-black mb-2">Historial de responsables</h4>${hist.length ? `<div class="border border-stone-200 rounded-xl divide-y divide-stone-100 max-h-60 overflow-y-auto">${hist.map(h => `<div class="p-2.5"><div class="flex justify-between"><b>${esc(h.impulsador_nombre || '—')}</b>${h.es_actual ? badge('Actual', 'ok') : ''}</div><div class="text-stone-500">${esc(h.impulsador_rol || '')} · ${esc(fmtDate(h.fecha_inicio))} → ${esc(h.fecha_fin ? fmtDate(h.fecha_fin) : 'actual')}</div>${h.motivo ? `<div class="text-stone-500 italic">“${esc(h.motivo)}”</div>` : ''}${h.registrado_por ? `<div class="text-[10px] text-stone-400">Registrado por ${esc(h.registrado_por)}</div>` : ''}</div>`).join('')}</div>` : emptyHTML('Sin historial de asignaciones')}</div></div>
     </div>`, true);
   document.getElementById('pv-reasignar')?.addEventListener('click', () => reassign(p, d));
 }

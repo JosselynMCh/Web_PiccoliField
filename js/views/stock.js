@@ -1,6 +1,6 @@
 import { S, settle } from '../data.js';
 import { api } from '../api.js';
-import { esc, num, kpi, card, pageHeader, loadingHTML, errorHTML, emptyHTML, estadoBadge, badge, label, avatar, resolveImg, fmtDateTime,
+import { esc, num, kpi, card, pageHeader, loadingHTML, errorHTML, emptyHTML, estadoBadge, badge, label, avatar, resolveImg, fmtDateTime, fmtDate, fmtTime,
   inputCls, btnGhost, btnOk, btnDanger, openModal, closeModal, modalHeader, toast, debounce } from '../ui.js';
 
 let root, alertas = [], busy = false;
@@ -118,7 +118,7 @@ async function detail(a0) {
       const blob = await fetchBlob(src);
       const url = URL.createObjectURL(blob);
       box.innerHTML = `<img src="${url}" class="w-full max-h-72 object-contain cursor-zoom-in" alt="Evidencia" id="ev-img">
-        <div class="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10px] font-bold px-2 py-1 flex justify-between"><span>PICCOLIFIELD · ${esc(a.local)}</span><span>${esc(a.fechaEmision || '')} ${esc(a.horaEmision || '')}</span></div>`;
+        <div class="absolute inset-x-0 bottom-0 bg-black/55 text-white text-[10px] font-bold px-2 py-1 flex justify-between"><span>PICCOLIFIELD · ${esc(a.local)}</span><span>${esc(fmtDate(a.fechaEmision))} ${esc(a.horaEmision ? fmtTime(a.horaEmision) : '')}</span></div>`;
       document.getElementById('ev-img').onclick = () => window.open(url, '_blank');
       const server = a.hash ? `<br><span class="text-stone-400">Registrado:</span> ${esc(a.hash)}` : '';
       hashEl.innerHTML = `SHA-256 (verificado en navegador): ${await sha256(blob)}${server}`;

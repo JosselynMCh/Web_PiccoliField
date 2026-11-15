@@ -1,6 +1,6 @@
 import { S, settle } from '../data.js';
-import { esc, num, kpi, card, pageHeader, loadingHTML, errorHTML, emptyHTML, estadoBadge, badge, label, avatar, fmtDateTime, resolveImg, validCoord, mapsLink,
-  inputCls, btnGhost, btnPrimary, openModal, closeModal, modalHeader, toast, debounce, dateOnly } from '../ui.js';
+import { esc, num, kpi, card, pageHeader, loadingHTML, errorHTML, emptyHTML, estadoBadge, badge, label, avatar, fmtDateTime, fmtDate, resolveImg, validCoord, mapsLink,
+  inputCls, btnGhost, btnPrimary, openModal, closeModal, modalHeader, toast, debounce } from '../ui.js';
 
 let root, items = [], personas = [], busy = false, view = 'kanban';
 const f = { q: '', estado: '', zona: '', tipo: '' };
@@ -99,7 +99,7 @@ async function detail(p) {
           <button id="pr-asgbtn" class="${btnPrimary} mt-2 w-full justify-center">Asignar</button></div></div>
       <div id="pr-err" class="text-rose-600 font-bold hidden"></div>
       <div><h4 class="font-black mb-2">Línea de tiempo y seguimientos</h4>
-        ${seg.length ? `<div class="space-y-2 max-h-52 overflow-y-auto border-l-2 border-brand-gold pl-3">${seg.map(s => `<div><div class="font-bold">${esc(s.estadoNuevo ? `${label(s.estadoAnterior || '—')} → ${label(s.estadoNuevo)}` : 'Seguimiento')} <span class="text-stone-400 font-normal">${esc(dateOnly(s.fecha))}</span></div><div class="text-stone-600">${esc(s.notas || '')}</div></div>`).join('')}</div>` : emptyHTML('Aún no hay seguimientos registrados')}
+        ${seg.length ? `<div class="space-y-2 max-h-52 overflow-y-auto border-l-2 border-brand-gold pl-3">${seg.map(s => `<div><div class="font-bold">${esc(s.estadoNuevo ? `${label(s.estadoAnterior || '—')} → ${label(s.estadoNuevo)}` : 'Seguimiento')} <span class="text-stone-400 font-normal">${esc(fmtDate(s.fecha))}</span></div><div class="text-stone-600">${esc(s.notas || '')}</div></div>`).join('')}</div>` : emptyHTML('Aún no hay seguimientos registrados')}
         <div class="flex gap-2 mt-2"><input id="pr-seg" class="${inputCls}" placeholder="Registrar actividad (llamada, visita, propuesta...)"><button id="pr-segbtn" class="${btnGhost}">Agregar</button></div></div></div>`, true);
 
   const err = (m) => { const e = document.getElementById('pr-err'); e.textContent = m; e.classList.remove('hidden'); };

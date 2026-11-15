@@ -2,21 +2,21 @@
  * PICCOLI FIELD - ROUTER SPA POR HASH
  * Cada vista exporta: render(container), refresh() [opcional], destroy() [opcional]
  */
-import { errorHTML } from './ui.js';
+import { errorHTML } from './ui.js?v=3';
 
 const ROUTES = {
-  supervision: ['Supervisión General', () => import('./views/supervision.js')],
-  asistencia: ['Asistencia en Vivo', () => import('./views/asistencia.js')],
-  justificaciones: ['Justificaciones', () => import('./views/justificaciones.js')],
-  ventas: ['Ventas, Metas y Pedidos', () => import('./views/ventas.js')],
-  pdv: ['Puntos de Venta y Responsables', () => import('./views/pdv.js')],
-  stock: ['Stock y Alertas con Evidencia', () => import('./views/stock.js')],
-  incidencias: ['Incidencias en Campo', () => import('./views/incidencias.js')],
-  prospectos: ['Prospectos y Oportunidades', () => import('./views/prospectos.js')],
-  mapa: ['Mapa General', () => import('./views/mapa.js')],
-  usuarios: ['Personal y Dispositivos', () => import('./views/usuarios.js')],
-  reportes: ['Reportes y Exportación', () => import('./views/reportes.js')],
-  config: ['Ajustes del Panel', () => import('./views/config.js')]
+  supervision: ['Supervisión General', () => import('./views/supervision.js?v=3')],
+  asistencia: ['Asistencia en Vivo', () => import('./views/asistencia.js?v=3')],
+  justificaciones: ['Justificaciones', () => import('./views/justificaciones.js?v=3')],
+  ventas: ['Ventas, Metas y Pedidos', () => import('./views/ventas.js?v=3')],
+  pdv: ['Puntos de Venta y Responsables', () => import('./views/pdv.js?v=3')],
+  stock: ['Stock y Alertas con Evidencia', () => import('./views/stock.js?v=3')],
+  incidencias: ['Incidencias en Campo', () => import('./views/incidencias.js?v=3')],
+  prospectos: ['Prospectos y Oportunidades', () => import('./views/prospectos.js?v=3')],
+  mapa: ['Mapa General', () => import('./views/mapa.js?v=3')],
+  usuarios: ['Personal y Dispositivos', () => import('./views/usuarios.js?v=3')],
+  reportes: ['Reportes y Exportación', () => import('./views/reportes.js?v=3')],
+  config: ['Ajustes del Panel', () => import('./views/config.js?v=3')]
 };
 
 class Router {

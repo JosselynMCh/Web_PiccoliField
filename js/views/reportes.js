@@ -1,16 +1,16 @@
 import { S, settle } from '../data.js';
-import { esc, card, pageHeader, loadingHTML, emptyHTML, inputCls, btnPrimary, btnGhost, downloadFile, toCSV, toast, todayISO, dateOnly } from '../ui.js';
+import { esc, card, pageHeader, loadingHTML, emptyHTML, inputCls, btnPrimary, btnGhost, downloadFile, toCSV, toast, todayISO, dateOnly, fmtDate, fmtDateTime, fmtTime } from '../ui.js';
 
 let root, last = null;
 
 const REPORTS = {
   asistencia: { icon: 'fa-user-clock', title: 'Asistencia', desc: 'Marcaciones, estado, tardanza y ubicación', dateField: 'fecha',
     fetch: async () => { const [a, b] = await Promise.all([S.asistColaboradores(), S.asistRecientes()]); const m = new Map(); [...b, ...a].forEach(r => m.set(`${r.idUsuario}|${r.fecha}|${r.tipo}`, r));
-      return [...m.values()].map(r => ({ colaborador: r.nombre, sede: r.sede, tipo: r.tipo, estado: r.estado, fecha_hora: r.fecha, minutos_tardanza: r.minutos, latitud: r.lat, longitud: r.lng, justificacion_estado: r.justificacion?.estado || '', justificacion_motivo: r.justificacion?.motivo || '', fecha: r.fecha })); } },
+      return [...m.values()].map(r => ({ colaborador: r.nombre, sede: r.sede, tipo: r.tipo, estado: r.estado, fecha_hora: fmtDateTime(r.fecha), minutos_tardanza: r.minutos, latitud: r.lat, longitud: r.lng, justificacion_estado: r.justificacion?.estado || '', justificacion_motivo: r.justificacion?.motivo || '', fecha: dateOnly(r.fecha) })); } },
   stock: { icon: 'fa-boxes-stacked', title: 'Stock y alertas', desc: 'Alertas de stock con severidad y estado', dateField: 'fecha_emision',
-    fetch: async () => (await S.alertas()).map(a => ({ id: a.id, producto: a.producto, punto_venta: a.local, tipo: a.tipo, severidad: a.nivel, estado: a.estado, fecha_emision: a.fechaEmision, hora_emision: a.horaEmision, fecha_atencion: a.fechaAtencion, comentario: a.comentario })) },
+    fetch: async () => (await S.alertas()).map(a => ({ id: a.id, producto: a.producto, punto_venta: a.local, tipo: a.tipo, severidad: a.nivel, estado: a.estado, fecha_emision: fmtDate(a.fechaEmision), hora_emision: a.horaEmision ? fmtTime(a.horaEmision) : '—', fecha_atencion: a.fechaAtencion ? fmtDateTime(`${a.fechaAtencion} ${a.horaAtencion || ''}`.trim()) : '—', comentario: a.comentario || '—' })) },
   prospectos: { icon: 'fa-filter-circle-dollar', title: 'Prospectos', desc: 'Pipeline comercial y promotores', dateField: 'fecha',
-    fetch: async () => (await S.prospectos()).map(p => ({ id: p.id, nombre: p.nombre, tipo: p.tipo, zona: p.zona, direccion: p.direccion, telefono: p.telefono, estado: p.estado, promotor: p.promotor || '', latitud: p.lat, longitud: p.lng, fecha: p.fecha })) },
+    fetch: async () => (await S.prospectos()).map(p => ({ id: p.id, nombre: p.nombre, tipo: p.tipo, zona: p.zona, direccion: p.direccion, telefono: p.telefono, estado: p.estado, promotor: p.promotor || '', latitud: p.lat, longitud: p.lng, fecha: p.fecha ? fmtDate(p.fecha) : '—' })) },
   ventas: { icon: 'fa-sack-dollar', title: 'Ventas e impulsadores', desc: 'Ranking y avance frente a la meta', dateField: null,
     fetch: async () => (await S.vendedores()).map(v => ({ posicion: v.posicion, impulsador: v.nombre, punto_venta: v.local, unidades_vendidas: v.vendido, meta: v.meta, avance_pct: v.meta ? Math.round(v.vendido / v.meta * 100) : '' })) },
   pdv: { icon: 'fa-store', title: 'Puntos de venta', desc: 'Catálogo de PDV con tipo, estado y responsable', dateField: null,

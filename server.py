@@ -44,6 +44,8 @@ class PiccoliWebHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Expose-Headers", "ETag, Content-Type")
         self.send_header("Access-Control-Allow-Private-Network", "true")
         self.send_header("Access-Control-Max-Age", "86400")
+        if not self._is_proxied_path():
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
         super().end_headers()
 
     def do_OPTIONS(self):
@@ -96,14 +98,20 @@ class PiccoliWebHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(err_body)
 
+        except (ConnectionAbortedError, BrokenPipeError, ConnectionResetError):
+            pass
+
         except Exception as ex:
-            msg = f'{{"status":false,"message":"Error conectando con Render ({ex})"}}'.encode("utf-8")
-            self.send_response(502)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(msg)))
-            self.send_header("Connection", "close")
-            self.end_headers()
-            self.wfile.write(msg)
+            try:
+                msg = f'{{"status":false,"message":"Error conectando con Render ({ex})"}}'.encode("utf-8")
+                self.send_response(502)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(msg)))
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.wfile.write(msg)
+            except (ConnectionAbortedError, BrokenPipeError, ConnectionResetError):
+                pass
 
     def do_GET(self):
         if self._is_proxied_path():

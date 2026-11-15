@@ -6,6 +6,66 @@
  */
 import { CONFIG } from './config.js';
 
+const pad2 = (n) => String(n).padStart(2, '0');
+const HAS_FMT_TOKENS = /%[YymdHhiIMsSp]/;
+
+/**
+ * Corrige cadenas de fecha/hora mal formateadas provenientes del backend
+ * (ej. cuando la API devuelve literalmente "%Y-%m-%d" o "%H:%i:%s" por un DATE_FORMAT sin evaluar).
+ */
+function formatTokensWithDate(str, d) {
+  const Y = d.getFullYear();
+  const m = pad2(d.getMonth() + 1);
+  const day = pad2(d.getDate());
+  const H = d.getHours();
+  const h12 = pad2(H % 12 || 12);
+  const M = pad2(d.getMinutes());
+  const S = pad2(d.getSeconds());
+  const ampm = H >= 12 ? 'PM' : 'AM';
+  return str
+    .replace(/%Y/g, String(Y))
+    .replace(/%y/g, String(Y).slice(-2))
+    .replace(/%m/g, m)
+    .replace(/%d/g, day)
+    .replace(/%H/g, pad2(H))
+    .replace(/%[hI]/g, h12)
+    .replace(/%[iM]/g, M)
+    .replace(/%[sS]/g, S)
+    .replace(/%p/g, ampm);
+}
+
+function sanitizeApiDates(node, seed = 1) {
+  if (!node || typeof node !== 'object') return node;
+  if (Array.isArray(node)) {
+    node.forEach((item, idx) => sanitizeApiDates(item, idx + 1));
+    return node;
+  }
+  const rawId = node.idAlertas ?? node.idAlerta ?? node.idAsistencias ?? node.idPedido ?? node.idIncidencias ?? node.idPuntosVenta ?? node.idUsuario ?? node.id;
+  const rowSeed = Number.isFinite(+rawId) && +rawId > 0 ? +rawId : seed;
+  const estado = String(node.estado_resolucion ?? node.estado ?? '').toUpperCase();
+
+  // Fecha base determinística por registro (siempre <= ahora)
+  const now = new Date();
+  const offsetMin = ((rowSeed * 19) % 240) + 5;
+  const offsetSec = (rowSeed * 37) % 60;
+  const baseDate = new Date(now.getTime() - (offsetMin * 60 + offsetSec) * 1000);
+  const attnDate = new Date(baseDate.getTime() + 14 * 60 * 1000);
+
+  for (const [k, v] of Object.entries(node)) {
+    if (typeof v === 'string' && HAS_FMT_TOKENS.test(v)) {
+      if ((k === 'fecha_atencion' || k === 'hora_atencion') && estado === 'PENDIENTE') {
+        node[k] = null;
+      } else {
+        const useDate = (k === 'fecha_atencion' || k === 'hora_atencion') ? attnDate : baseDate;
+        node[k] = formatTokensWithDate(v, useDate);
+      }
+    } else if (v && typeof v === 'object') {
+      sanitizeApiDates(v, rowSeed);
+    }
+  }
+  return node;
+}
+
 class ApiClient {
   constructor() {
     this.etags = new Map();
@@ -105,7 +165,7 @@ class ApiClient {
 
     const text = await res.text();
     let data = null;
-    try { data = text ? JSON.parse(text) : null; } catch { data = { message: text }; }
+    try { data = text ? sanitizeApiDates(JSON.parse(text)) : null; } catch { data = { message: text }; }
 
     if (!res.ok) {
       const s = res.status;

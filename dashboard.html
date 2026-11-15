@@ -227,9 +227,9 @@
   <!-- INICIALIZACIÓN DE LA APLICACIÓN                               -->
   <!-- ============================================================= -->
   <script type="module">
-    import { AuthService } from './js/auth.js';
-    import { router } from './js/router.js';
-    import { poller } from './js/poller.js';
+    import { AuthService } from './js/auth.js?v=3';
+    import { router } from './js/router.js?v=3';
+    import { poller } from './js/poller.js?v=3';
 
     if (AuthService.requireAuth()) {
       const user = AuthService.getUser();

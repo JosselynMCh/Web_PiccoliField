@@ -16,20 +16,79 @@ export const num = (v, d = 0) => { const n = parseFloat(v); return Number.isFini
 export const money = (n) => 'S/ ' + num(n).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const pct = (a, b) => (b > 0 ? Math.min(999, Math.round((a / b) * 100)) : 0);
 
+const pad2 = (n) => String(n).padStart(2, '0');
+
+export function cleanDateTokens(s) {
+  if (!s || typeof s !== 'string' || !/%[YymdHhiIMsSp]/.test(s)) return String(s ?? '');
+  const now = new Date();
+  return s
+    .replace(/%Y/g, String(now.getFullYear()))
+    .replace(/%y/g, String(now.getFullYear()).slice(-2))
+    .replace(/%m/g, pad2(now.getMonth() + 1))
+    .replace(/%d/g, pad2(now.getDate()))
+    .replace(/%H/g, pad2(now.getHours()))
+    .replace(/%[hI]/g, pad2(now.getHours() % 12 || 12))
+    .replace(/%[iM]/g, pad2(now.getMinutes()))
+    .replace(/%[sS]/g, pad2(now.getSeconds()))
+    .replace(/%p/g, now.getHours() >= 12 ? 'PM' : 'AM');
+}
+
+export function parseDate(v) {
+  if (!v) return null;
+  if (v instanceof Date) return isNaN(v) ? null : v;
+  const s = cleanDateTokens(String(v).trim());
+  if (!s) return null;
+  // YYYY-MM-DD (sin hora -> evitar desfase UTC)
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3], 0, 0, 0);
+  // YYYY-MM-DD HH:MM(:SS)
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+  // DD/MM/YYYY o DD-MM-YYYY con hora opcional
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[ T,]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  // Solo hora HH:MM(:SS)
+  m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (m) { const d = new Date(); d.setHours(+m[1], +m[2], +(m[3] || 0), 0); return d; }
+  const d = new Date(s.replace(' ', 'T'));
+  return isNaN(d) ? null : d;
+}
+
+export function fmtDate(v) {
+  if (!v) return '—';
+  const d = parseDate(v);
+  if (!d) return esc(cleanDateTokens(String(v)));
+  return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
+}
+
 export function fmtDateTime(v) {
   if (!v) return '—';
-  const d = new Date(String(v).replace(' ', 'T'));
-  if (isNaN(d)) return esc(v);
+  const s = cleanDateTokens(String(v).trim());
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s) || /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(s)) return fmtDate(s);
+  const d = parseDate(s);
+  if (!d) return esc(s);
   return d.toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
+
 export function fmtTime(v) {
   if (!v) return '—';
-  const d = new Date(String(v).replace(' ', 'T'));
-  if (isNaN(d)) return esc(String(v).slice(-8, -3) || v);
+  const s = cleanDateTokens(String(v).trim());
+  const d = parseDate(s);
+  if (!d) return esc(s.slice(-8, -3) || s);
   return d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
 }
-export const todayISO = () => new Date().toISOString().slice(0, 10);
-export const dateOnly = (v) => (v ? String(v).slice(0, 10) : '');
+
+export const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+};
+
+export const dateOnly = (v) => {
+  if (!v) return '';
+  const d = parseDate(v);
+  if (!d) return cleanDateTokens(String(v)).slice(0, 10);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+};
 
 export function fullName(o) {
   if (!o) return '';

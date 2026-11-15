@@ -4,7 +4,7 @@
  * tolerando los alias de campo que usa la API.
  */
 import { api } from './api.js';
-import { pick, num, fullName } from './ui.js';
+import { pick, num, fullName, cleanDateTokens } from './ui.js';
 
 export const list = (res) => {
   if (Array.isArray(res)) return res;
@@ -88,18 +88,23 @@ export function normProspecto(p) {
 }
 
 export function normAlerta(a) {
+  const est = String(pick(a, 'estado_resolucion', 'estado') || 'PENDIENTE').toUpperCase();
+  const fe = cleanDateTokens(pick(a, 'fecha_emision', 'fecha') || '');
+  const he = cleanDateTokens(pick(a, 'hora_emision', 'hora') || '');
+  const fa = est === 'PENDIENTE' ? '' : cleanDateTokens(pick(a, 'fecha_atencion') || '');
+  const ha = est === 'PENDIENTE' ? '' : cleanDateTokens(pick(a, 'hora_atencion') || '');
   return {
     raw: a,
     id: pick(a, 'idAlertas', 'idAlerta', 'id', 'id_alerta', 'id_alertas'),
     nivel: String(pick(a, 'nivel_alerta', 'severidad', 'nivel') || '').toUpperCase(),
     tipo: String(pick(a, 'tipo_alerta', 'tipo') || '').toUpperCase(),
-    estado: String(pick(a, 'estado_resolucion', 'estado') || 'PENDIENTE').toUpperCase(),
+    estado: est,
     local: pick(a, 'local_nombre', 'puntoVenta', 'local') || '—',
     producto: pick(a, 'nombre_producto', 'producto') || '—',
     direccion: pick(a, 'local_direccion', 'direccion'),
-    fechaEmision: pick(a, 'fecha_emision', 'fecha'),
-    horaEmision: pick(a, 'hora_emision', 'hora'),
-    fechaAtencion: pick(a, 'fecha_atencion'), horaAtencion: pick(a, 'hora_atencion'),
+    fechaEmision: fe || undefined,
+    horaEmision: he || undefined,
+    fechaAtencion: fa || undefined, horaAtencion: ha || undefined,
     comentario: pick(a, 'comentario'),
     stock: pick(a, 'stock_actual'), minimo: pick(a, 'stock_minimo'),
     fotoProducto: pick(a, 'url_foto_producto', 'foto_producto', 'foto', 'url_foto', 'evidencia', 'foto_evidencia'),
@@ -152,8 +157,14 @@ export const S = {
   atenderAlerta: (id, comentario) => api.put(`supervision/alertas/${id}/atender`, { comentario }),
   ignorarAlerta: (id, comentario) => api.put(`supervision/alertas/${id}/ignorar`, { comentario }),
   pdvSupervision: async (estado) => list(await api.get('supervision/puntos-venta', { estado })).map(normPdv),
-  pdvDetalle: async (id) => obj(await api.get(`supervision/puntos-venta/${id}`)),
-  pdvHistorial: async (id) => list(await api.get(`supervision/puntos-venta/${id}/historial`)),
+  pdvDetalle: async (id) => {
+    try { return obj(await api.get(`supervision/puntos-venta/${id}`)); }
+    catch { return obj(await api.get(`puntos-venta/${id}`)); }
+  },
+  pdvHistorial: async (id) => {
+    try { return list(await api.get(`supervision/puntos-venta/${id}/historial`)); }
+    catch { return []; }
+  },
   reasignar: (idUsuario, idPuntosVenta, motivo) => api.post('supervision/reasignar-impulsador', { idUsuario, idPuntosVenta, motivo }),
   reasignarVendedor: (idUsuario, idPuntosVenta, motivo) => api.post(`supervision/vendedores/${idUsuario}/reasignar`, { idPuntosVenta, motivo }),
 

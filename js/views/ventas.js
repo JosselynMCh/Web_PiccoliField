@@ -1,6 +1,6 @@
 import { S, settle } from '../data.js';
-import { esc, num, money, kpi, card, pageHeader, loadingHTML, errorHTML, emptyHTML, progressBar, estadoBadge, label, avatar, pick, pct, fmtDateTime,
-  inputCls, btnGhost, btnPrimary, openModal, closeModal, modalHeader, toast, debounce, dateOnly } from '../ui.js';
+import { esc, num, money, kpi, card, pageHeader, loadingHTML, errorHTML, emptyHTML, progressBar, estadoBadge, label, avatar, pick, pct, fmtDateTime, fmtDate,
+  inputCls, btnGhost, btnPrimary, openModal, closeModal, modalHeader, toast, debounce } from '../ui.js';
 
 let root, tab = 'ranking', vend = [], pdvs = [], productos = [], pedidos = null, busy = false, charts = [];
 const f = { q: '', pdv: '', estado: '' };
@@ -84,7 +84,7 @@ async function detail(v) {
       <div class="grid md:grid-cols-2 gap-4">
         <div><h4 class="font-black mb-2">Productos vendidos</h4>${prods.length ? `<div class="border border-stone-200 rounded-xl divide-y divide-stone-100 max-h-56 overflow-y-auto">${prods.map(p => `<div class="p-2.5 flex justify-between"><span>${esc(p.nombre_producto)}</span><b>${p.cantidad_vendida}</b></div>`).join('')}</div>` : emptyHTML('Sin productos vendidos')}</div>
         <div><h4 class="font-black mb-2">Rendimiento mensual ${anio}</h4>${meses.length ? '<div class="h-56"><canvas id="m-ch"></canvas></div>' : emptyHTML('Sin histórico disponible')}</div></div>
-      ${hist.length ? `<div><h4 class="font-black mb-2">Historial de asignaciones</h4><div class="border border-stone-200 rounded-xl divide-y divide-stone-100 max-h-44 overflow-y-auto">${hist.map(h => `<div class="p-2.5 flex justify-between gap-2"><b>${esc(h.puntoVenta || '')}</b><span>${esc(dateOnly(h.fecha_inicio))} → ${esc(dateOnly(h.fecha_fin) || 'actual')}</span></div>`).join('')}</div></div>` : ''}
+      ${hist.length ? `<div><h4 class="font-black mb-2">Historial de asignaciones</h4><div class="border border-stone-200 rounded-xl divide-y divide-stone-100 max-h-44 overflow-y-auto">${hist.map(h => `<div class="p-2.5 flex justify-between gap-2"><b>${esc(h.puntoVenta || '')}</b><span>${esc(fmtDate(h.fecha_inicio))} → ${esc(h.fecha_fin ? fmtDate(h.fecha_fin) : 'actual')}</span></div>`).join('')}</div></div>` : ''}
     </div>`, true);
   const cv = document.getElementById('m-ch');
   if (cv && window.Chart) {
