@@ -29,92 +29,93 @@ async function load() {
     root.querySelector('#btn-retry').onclick = () => render(root);
     return;
   }
-  const map = new Map();
+  const listPeople = [];
+  const normKey = (s) => String(s || '').trim().toLowerCase();
+  const findOrCreate = ({ id, nombre, correo }) => {
+    const nName = normKey(nombre);
+    const nMail = normKey(correo);
+    let found = listPeople.find(x =>
+      (id && x.id && String(x.id) === String(id)) ||
+      (nMail && x.correo && normKey(x.correo) === nMail) ||
+      (nName && nName !== 'sin nombre' && normKey(x.nombre) === nName)
+    );
+    if (!found) {
+      found = { id: id || null, nombre: nombre || 'Sin nombre', correo: correo || '', rol: '', meta: 0, local: '', foto: '' };
+      listPeople.push(found);
+    } else {
+      if (!found.id && id) found.id = id;
+      if ((!found.nombre || found.nombre === 'Sin nombre') && nombre) found.nombre = nombre;
+      if (!found.correo && correo) found.correo = correo;
+    }
+    return found;
+  };
 
   // 1) Administrador en sesión (desde GET /perfil)
   const admin = AuthService.getUser();
   if (admin && (admin.id || admin.correo)) {
-    const k = String(admin.id || admin.correo);
-    map.set(k, {
-      id: admin.id,
-      nombre: admin.nombre || 'Administrador',
-      correo: admin.correo || '',
-      rol: 'ADMINISTRADOR',
-      meta: 0,
-      local: admin.sede || 'Sede Central',
-      foto: admin.foto || ''
-    });
+    const cur = findOrCreate({ id: admin.id, nombre: admin.nombre || 'Administrador', correo: admin.correo });
+    cur.rol = 'ADMINISTRADOR';
+    cur.local = cur.local || admin.sede || 'Sede Central';
+    cur.foto = cur.foto || admin.foto || '';
   }
 
   // 2) Impulsadores y personal de supervisión (incluye url_foto)
   (data.imp || []).forEach(p => {
-    const k = String(p.id);
-    const prev = map.get(k) || {};
-    map.set(k, { ...prev, ...p, foto: p.foto || prev.foto || '' });
+    const cur = findOrCreate({ id: p.id, nombre: p.nombre, correo: p.correo });
+    Object.assign(cur, {
+      ...p,
+      id: p.id || cur.id,
+      nombre: (p.nombre && p.nombre !== 'Sin nombre') ? p.nombre : cur.nombre,
+      correo: p.correo || cur.correo,
+      rol: p.rol || cur.rol,
+      local: (p.local && p.local !== '—') ? p.local : cur.local,
+      foto: p.foto || cur.foto || ''
+    });
   });
 
   // 3) Colaboradores y asistencias recientes (incluye foto_perfil = url_foto)
   [...(data.col || []), ...(data.rec || [])].forEach(c => {
-    const k = String(c.idUsuario || c.nombre);
-    const cur = map.get(k) || {
-      id: c.idUsuario,
-      nombre: c.nombre,
-      rol: (c.rol || 'TRABAJADOR').toUpperCase(),
-      correo: '',
-      meta: 0,
-      local: c.sede,
-      foto: c.foto || ''
-    };
+    const cur = findOrCreate({ id: c.idUsuario, nombre: c.nombre });
     if (!cur.asist || (c.fecha && (!cur.asist.fecha || String(c.fecha) > String(cur.asist.fecha)))) cur.asist = c;
-    if (!cur.local || cur.local === '—') cur.local = c.sede;
+    if ((!cur.local || cur.local === '—') && c.sede && c.sede !== '—') cur.local = c.sede;
     if (!cur.foto && c.foto) cur.foto = c.foto;
     if (!cur.rol && c.rol) cur.rol = String(c.rol).toUpperCase();
-    map.set(k, cur);
+    if (!cur.rol) cur.rol = 'TRABAJADOR';
   });
 
   // 4) Promotores e impulsadores asignados en puntos de venta
   (data.pdv || []).forEach(pv => {
     if (!pv.idUsuario && !pv.responsable) return;
-    const k = String(pv.idUsuario || pv.responsable);
-    const cur = map.get(k) || {
-      id: pv.idUsuario,
-      nombre: pv.responsable,
-      correo: pv.correoResponsable || '',
-      rol: (pv.rolResponsable || (pv.tipo.startsWith('DIST') ? 'PROMOTOR' : 'IMPULSADOR')).toUpperCase(),
-      meta: 0,
-      local: pv.nombre,
-      foto: pv.fotoResponsable || ''
-    };
+    const cur = findOrCreate({ id: pv.idUsuario, nombre: pv.responsable, correo: pv.correoResponsable });
     if (!cur.correo && pv.correoResponsable) cur.correo = pv.correoResponsable;
     if (!cur.rol && pv.rolResponsable) cur.rol = pv.rolResponsable.toUpperCase();
+    if (!cur.rol) cur.rol = (pv.tipo.startsWith('DIST') ? 'PROMOTOR' : 'IMPULSADOR');
     if (!cur.local || cur.local === '—') cur.local = pv.nombre;
     if (!cur.foto && pv.fotoResponsable) cur.foto = pv.fotoResponsable;
-    map.set(k, cur);
   });
 
   // 5) Ventas y metas
   (data.vend || []).forEach(v => {
-    const p = map.get(String(v.id));
-    if (p) {
-      p.vendido = v.vendido;
-      p.meta = p.meta || v.meta;
-      if (!p.foto && v.foto) p.foto = v.foto;
-    }
+    const p = findOrCreate({ id: v.id, nombre: v.nombre });
+    p.vendido = v.vendido;
+    p.meta = p.meta || v.meta;
+    if ((!p.local || p.local === '—') && v.local && v.local !== '—') p.local = v.local;
+    if (!p.rol) p.rol = 'IMPULSADOR';
+    if (!p.foto && v.foto) p.foto = v.foto;
   });
 
-  people = [...map.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  people = listPeople.sort((a, b) => String(a.nombre).localeCompare(String(b.nombre)));
   pdvs = data.pdv || [];
   frame(); draw();
 }
 
 function frame() {
   if (root.querySelector('#us-body')) return;
-  root.innerHTML = `${pageHeader('Personal y Dispositivos', 'Directorio del personal de campo con rol, sede, meta mensual, rendimiento y estado de asistencia. Reasigne a un punto de venta desde la ficha.', `<button id="us-refresh" class="${btnGhost}"><i class="fa-solid fa-rotate"></i> Actualizar</button>`)}
+  root.innerHTML = `${pageHeader('Personal y Dispositivos', 'Directorio del personal de campo con rol, sede, meta mensual, rendimiento y estado de asistencia. Reasigne a un punto de venta desde la ficha.')}
     <div id="us-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4"></div>
     <div class="flex flex-wrap gap-2 mb-3"><input id="us-q" class="${inputCls} sm:w-60" placeholder="Buscar por nombre, correo o sede..."><select id="us-rol" class="${inputCls} sm:w-44"><option value="">Todos los roles</option><option>ADMINISTRADOR</option><option>PROMOTOR</option><option>IMPULSADOR</option><option>TRABAJADOR</option></select></div>
     <div id="us-body"></div>
     <div class="mt-4 p-3 rounded-xl bg-stone-100 text-[11px] text-stone-600"><i class="fa-solid fa-circle-info mr-1"></i> La API actual no expone altas/ediciones de usuarios ni aprobación de dispositivos (solo el propio usuario actualiza su dispositivo con <code>PUT /dispositivo</code>). Este directorio se construye con <code>/supervision/impulsadores</code>, <code>/asistencias/colaboradores</code> y <code>/supervision/vendedores</code>.</div>`;
-  root.querySelector('#us-refresh').onclick = () => load();
   root.querySelector('#us-q').oninput = debounce(e => { f.q = e.target.value.toLowerCase(); draw(); });
   root.querySelector('#us-rol').onchange = e => { f.rol = e.target.value; draw(); };
 }

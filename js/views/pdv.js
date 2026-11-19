@@ -19,23 +19,26 @@ async function load() {
   busy = false;
   if (!root) return;
   if (!data.pdv && !data.supPdv) { root.innerHTML = errorHTML((errors.pdv || errors.supPdv)?.message || 'Error', 'btn-retry'); root.querySelector('#btn-retry').onclick = () => render(root); return; }
-  const mapPdv = new Map();
+  const listPdv = [];
+  const findPdv = (p) => listPdv.find(x =>
+    (p.id && x.id && String(x.id) === String(p.id)) ||
+    (p.codigo && x.codigo && String(x.codigo).toLowerCase() === String(p.codigo).toLowerCase()) ||
+    (p.nombre && x.nombre && x.nombre.trim().toLowerCase() === p.nombre.trim().toLowerCase())
+  );
   [...(data.pdv || []), ...(data.supPdv || [])].forEach(p => {
-    const prev = mapPdv.get(p.id) || {};
-    mapPdv.set(p.id, {
-      ...prev,
-      ...Object.fromEntries(Object.entries(p).filter(([, v]) => v !== undefined && v !== null && v !== ''))
-    });
+    const existing = findPdv(p);
+    const clean = Object.fromEntries(Object.entries(p).filter(([, v]) => v !== undefined && v !== null && v !== ''));
+    if (existing) Object.assign(existing, clean);
+    else listPdv.push({ ...clean });
   });
-  pdvs = [...mapPdv.values()]; alertas = data.al || []; personas = data.per || [];
+  pdvs = listPdv; alertas = data.al || []; personas = data.per || [];
   frame(); draw();
 }
 
 function frame() {
   if (root.querySelector('#pv-body')) return;
   root.innerHTML = `
-    ${pageHeader('Puntos de Venta y Responsables', 'PDV de tipo VENTA (stands propios) y DISTRIBUCIÓN. Asigne o reasigne responsables y consulte el historial de cada punto.',
-      `<button id="pv-refresh" class="${btnGhost}"><i class="fa-solid fa-rotate"></i> Actualizar</button>`)}
+    ${pageHeader('Puntos de Venta y Responsables', 'PDV de tipo VENTA (stands propios) y DISTRIBUCIÓN. Asigne o reasigne responsables y consulte el historial de cada punto.')}
     <div id="pv-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4"></div>
     <div class="flex flex-wrap gap-2 mb-3 items-center">
       <div class="inline-flex bg-stone-100 rounded-xl p-1 text-xs font-bold" id="pv-tabs"><button data-v="lista" class="px-3 py-1.5 rounded-lg">Lista</button><button data-v="mapa" class="px-3 py-1.5 rounded-lg">Mapa</button></div>
@@ -43,7 +46,6 @@ function frame() {
       <select id="pv-tipo" class="${inputCls} sm:w-40"><option value="">Todos los tipos</option><option value="VENTA">VENTA</option><option value="DISTRIBUCION">DISTRIBUCIÓN</option></select>
       <select id="pv-estado" class="${inputCls} sm:w-40"><option value="">Todos los estados</option><option>ACTIVO</option><option>INACTIVO</option><option>CLAUSURADO</option></select>
     </div><div id="pv-body"></div>`;
-  root.querySelector('#pv-refresh').onclick = () => load();
   root.querySelector('#pv-tabs').onclick = e => { const b = e.target.closest('[data-v]'); if (b) { view = b.dataset.v; draw(); } };
   root.querySelector('#pv-q').oninput = debounce(e => { f.q = e.target.value.toLowerCase(); draw(); });
   root.querySelector('#pv-tipo').onchange = e => { f.tipo = e.target.value; draw(); };

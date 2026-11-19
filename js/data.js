@@ -105,6 +105,15 @@ export function normPdv(p) {
   };
 }
 
+export function normEstadoProspecto(e) {
+  if (!e) return 'NUEVO';
+  const s = String(e).trim().toUpperCase().replace(/[ -]/g, '_').replace(/Á/g, 'A').replace(/É/g, 'E').replace(/Í/g, 'I').replace(/Ó/g, 'O').replace(/Ú/g, 'U');
+  if (['EN_NEGOCIACION', 'NEGOCIACION', 'NEGOCIAR', 'CONTACTADO', 'CONTACTO'].includes(s)) return 'EN_NEGOCIACION';
+  if (['DESCARTADO', 'RECHAZADO', 'RECHAZAR', 'DESCARTAR'].includes(s)) return 'DESCARTADO';
+  if (['CONVERTIDO', 'CONVERTIR'].includes(s)) return 'CONVERTIDO';
+  return 'NUEVO';
+}
+
 export function normProspecto(p) {
   return {
     raw: p,
@@ -112,12 +121,12 @@ export function normProspecto(p) {
     nombre: pick(p, 'nombre', 'nombre_comercial') || 'Prospecto',
     direccion: pick(p, 'direccion') || '',
     telefono: pick(p, 'telefono') || '',
-    estado: String(pick(p, 'estado') || 'NUEVO').toUpperCase(),
+    estado: normEstadoProspecto(pick(p, 'estado') || 'NUEVO'),
     lat: pick(p, 'latitud', 'lat'), lng: pick(p, 'longitud', 'lng'),
     zona: pick(p, 'zona', 'distrito') || 'Sin zona',
-    tipo: String(pick(p, 'tipo') || '').toUpperCase(),
-    foto: pick(p, 'fotoUrl', 'foto_url', 'foto', 'foto_fachada'),
-    promotor: pick(p, 'promotor', 'promotor_nombre', 'promotor_asignado', 'asignado_a', 'responsable'),
+    tipo: String(pick(p, 'tipo', 'tipo_local') || '').toUpperCase(),
+    foto: pick(p, 'fotoUrl', 'foto_url', 'foto', 'foto_fachada', 'url_foto'),
+    promotor: pick(p, 'promotor', 'promotor_asignado', 'promotor_nombre', 'asignado_a', 'responsable'),
     idPromotor: pick(p, 'idPromotor', 'idUsuario', 'id_promotor'),
     potencial: pick(p, 'potencial'), contacto: pick(p, 'contacto'), notas: pick(p, 'notas'),
     fecha: pick(p, 'fecha', 'fecha_registro', 'created_at')
@@ -203,35 +212,83 @@ export function normIncidencia(r) {
   };
 }
 
-/* ---------------- Servicios (100% alineados con la colección Postman) ---------------- */
+/** Deduplica registros que provienen de JOINs en la BD conservando y fusionando los campos no vacíos */
+export function dedupeBy(arr, keyFn) {
+  if (!Array.isArray(arr)) return [];
+  const map = new Map();
+  for (const item of arr) {
+    if (!item || typeof item !== 'object') continue;
+    const rawKey = keyFn(item);
+    const key = rawKey !== undefined && rawKey !== null && rawKey !== '' ? String(rawKey).trim().toLowerCase() : JSON.stringify(item);
+    if (!map.has(key)) {
+      map.set(key, item);
+    } else {
+      const prev = map.get(key);
+      const merged = { ...prev };
+      for (const [k, v] of Object.entries(item)) {
+        if (v !== undefined && v !== null && v !== '' && v !== '—' && (merged[k] === undefined || merged[k] === null || merged[k] === '' || merged[k] === '—')) {
+          merged[k] = v;
+        }
+      }
+      map.set(key, merged);
+    }
+  }
+  return [...map.values()];
+}
+
+/* ---------------- Servicios (100% alineados con la colección Postman y deduplicados) ---------------- */
 export const S = {
   // 3. Módulo de Supervisión
   resumen: async () => obj(await api.get('supervision/resumen')),
-  vendedores: async () => list(await api.get('supervision/vendedores')).map(normVendedor),
+  vendedores: async () => dedupeBy(
+    list(await api.get('supervision/vendedores')).map(normVendedor),
+    v => v.id ? `id:${v.id}` : `n:${v.nombre}`
+  ),
   vendedorDetalle: async (id) => obj(await api.get(`supervision/vendedores/${id}`)),
   rendimiento: async (id, anio) => obj(await api.get(`supervision/vendedores/${id}/rendimiento-historico`, anio ? { anio } : {})),
   vendedorHistorialAsignaciones: async (id) => {
-    try { return list(await api.get(`supervision/vendedores/${id}/historial-asignaciones`)); }
-    catch { return []; }
+    try {
+      return dedupeBy(
+        list(await api.get(`supervision/vendedores/${id}/historial-asignaciones`)),
+        h => h.idAsignacion || h.id || `${h.puntoVenta || h.local_nombre || h.local || ''}|${h.fecha_inicio || ''}|${h.fecha_fin || ''}`
+      );
+    } catch { return []; }
   },
-  impulsadores: async () => list(await api.get('supervision/impulsadores')).map(normPersona),
-  alertas: async () => list(await api.get('supervision/alertas')).map(normAlerta),
+  impulsadores: async () => dedupeBy(
+    list(await api.get('supervision/impulsadores')).map(normPersona),
+    p => p.id ? `id:${p.id}` : `n:${p.correo || p.nombre}`
+  ),
+  alertas: async () => dedupeBy(
+    list(await api.get('supervision/alertas')).map(normAlerta),
+    a => a.id ? `id:${a.id}` : `${a.idPdv || a.local}|${a.idProducto || a.producto}|${a.tipo}|${a.fechaEmision || ''}|${a.horaEmision || ''}`
+  ),
   alertaDetalle: async (id) => normAlerta(obj(await api.get(`supervision/alertas/${id}`))),
   atenderAlerta: (id, comentario) => api.put(`supervision/alertas/${id}/atender`, { comentario }),
   ignorarAlerta: (id, comentario) => api.put(`supervision/alertas/${id}/ignorar`, { comentario }),
   estadoAlerta: (id, estado, comentario) => api.put(`supervision/alertas/${id}/estado`, { estado, comentario }),
-  pdvSupervision: async (estado) => list(await api.get('supervision/puntos-venta', estado ? { estado } : {})).map(normPdv),
+  pdvSupervision: async (estado) => dedupeBy(
+    list(await api.get('supervision/puntos-venta', estado ? { estado } : {})).map(normPdv),
+    p => p.id ? `id:${p.id}` : `n:${p.codigo || p.nombre}`
+  ),
   pdvDetalle: async (id) => {
     try { return obj(await api.get(`supervision/puntos-venta/${id}`)); }
     catch { return {}; }
   },
   pdvHistorial: async (id) => {
-    try { return list(await api.get(`supervision/puntos-venta/${id}/historial`)); }
-    catch { return []; }
+    try {
+      return dedupeBy(
+        list(await api.get(`supervision/puntos-venta/${id}/historial`)),
+        h => h.idAsignacion || h.id || `${h.impulsador_nombre || h.nombre || ''}|${h.fecha_inicio || ''}|${h.fecha_fin || ''}`
+      );
+    } catch { return []; }
   },
   pdvStock: async (id) => {
-    try { return list(await api.get(`supervision/puntos-venta/${id}/stock`)); }
-    catch { return []; }
+    try {
+      return dedupeBy(
+        list(await api.get(`supervision/puntos-venta/${id}/stock`)),
+        s => s.idProductos || s.idProducto || s.id || s.sku || s.codigo_barras || s.producto || s.nombre_producto
+      );
+    } catch { return []; }
   },
   reasignar: async (idUsuario, idPuntosVenta, motivo) => {
     try {
@@ -244,7 +301,10 @@ export const S = {
     api.post(`supervision/vendedores/${idUsuario}/reasignar`, { idPuntosVenta, motivo }),
 
   // Incidencias (Supervisión)
-  incidencias: async () => list(await api.get('supervision/incidencias')).map(normIncidencia),
+  incidencias: async () => dedupeBy(
+    list(await api.get('supervision/incidencias')).map(normIncidencia),
+    i => i.id ? `id:${i.id}` : `${i.local}|${i.tipo}|${i.fecha || ''}|${i.desc}`
+  ),
   incidenciaDetalle: async (id) => normIncidencia(obj(await api.get(`supervision/incidencias/${id}`))),
   atenderIncidencia: (id, estado, comentario) =>
     api.put(`supervision/incidencias/${id}/atender`, { estado, comentario }),
@@ -254,13 +314,25 @@ export const S = {
   },
 
   // 1. Puntos de Distribución / Venta
-  puntosVenta: async (q = {}) => list(await api.get('puntos-venta', q)).map(normPdv),
+  puntosVenta: async (q = {}) => dedupeBy(
+    list(await api.get('puntos-venta', q)).map(normPdv),
+    p => p.id ? `id:${p.id}` : `n:${p.codigo || p.nombre}`
+  ),
 
   // 2. Módulo de Asistencias y Justificaciones
   asistResumen: async () => obj(await api.get('asistencias/resumen')),
-  asistRecientes: async (limite) => list(await api.get('asistencias/recientes', limite ? { limite } : {})).map(normAsistencia),
-  asistColaboradores: async () => list(await api.get('asistencias/colaboradores')).map(normAsistencia),
-  asistHistorial: async (id) => list(await api.get(`asistencias/historial/${id}`)),
+  asistRecientes: async (limite) => dedupeBy(
+    list(await api.get('asistencias/recientes', limite ? { limite } : {})).map(normAsistencia),
+    a => a.id ? `id:${a.id}` : `${a.idUsuario || a.nombre}|${a.tipo}|${a.fecha || ''}`
+  ),
+  asistColaboradores: async () => dedupeBy(
+    list(await api.get('asistencias/colaboradores')).map(normAsistencia),
+    a => a.idUsuario ? `id:${a.idUsuario}` : `n:${a.nombre}`
+  ),
+  asistHistorial: async (id) => dedupeBy(
+    list(await api.get(`asistencias/historial/${id}`)),
+    h => h.idAsistencias || h.id || `${h.tipo || ''}|${h.fecha_hora || h.fecha || ''}`
+  ),
   justificacion: async (idUsuario) => {
     const res = await api.get(`asistencias/justificacion/${idUsuario}`);
     const d = obj(res);
@@ -326,20 +398,40 @@ export const S = {
     const addRecord = (item) => {
       if (!item || !item.justificacion) return;
       const u = userDir.get(+item.idUsuario) || {};
+      // Clave única por usuario + motivo + descripción para evitar que la misma justificación
+      // aparezca duplicada entre /asistencias/colaboradores, /asistencias/recientes y /asistencias/justificacion/<id>
+      const motivoKey = String(item.justificacion.motivo || '').trim().toLowerCase();
+      const descKey = String(item.justificacion.descripcion || '').trim().toLowerCase();
+      const key = `u:${+item.idUsuario}|${motivoKey}|${descKey}`;
+      const prev = outMap.get(key);
+      const prevJ = prev?.justificacion || {};
+      const curJ = item.justificacion || {};
+
       const merged = {
+        ...prev,
         ...item,
+        id: item.id || prev?.id,
         idUsuario: +item.idUsuario,
-        nombre: (item.nombre && item.nombre !== 'Sin nombre') ? item.nombre : (u.nombre || `Colaborador #${item.idUsuario}`),
-        sede: (item.sede && item.sede !== '—') ? item.sede : (u.sede || '—'),
-        rol: item.rol || u.rol || '',
-        foto: item.foto || u.foto || '',
-        estado: (item.estado && item.estado !== 'SIN_MARCAR') ? item.estado : (u.estado || 'JUSTIFICADO'),
-        minutos: item.minutos || u.minutos || 0,
-        fecha: item.fecha || item.justificacion.fecha || u.fecha || ''
+        nombre: (item.nombre && item.nombre !== 'Sin nombre') ? item.nombre : (prev?.nombre || u.nombre || `Colaborador #${item.idUsuario}`),
+        sede: (item.sede && item.sede !== '—') ? item.sede : (prev?.sede || u.sede || '—'),
+        rol: item.rol || prev?.rol || u.rol || '',
+        foto: item.foto || prev?.foto || u.foto || '',
+        estado: (item.estado && item.estado !== 'SIN_MARCAR') ? item.estado : (prev?.estado || u.estado || 'JUSTIFICADO'),
+        minutos: item.minutos || prev?.minutos || u.minutos || 0,
+        fecha: curJ.fecha || prevJ.fecha || item.fecha || prev?.fecha || u.fecha || '',
+        justificacion: {
+          ...prevJ,
+          ...curJ,
+          idJustificacion: curJ.idJustificacion || prevJ.idJustificacion,
+          idAsistencias: curJ.idAsistencias || prevJ.idAsistencias || item.id || prev?.id,
+          motivo: curJ.motivo || prevJ.motivo || 'Justificación de asistencia',
+          descripcion: curJ.descripcion || prevJ.descripcion || '',
+          estado: curJ.estado || prevJ.estado || 'PENDIENTE',
+          fecha: curJ.fecha || prevJ.fecha || item.fecha || prev?.fecha || '',
+          sustento: curJ.sustento || prevJ.sustento || '',
+          comentarioAdmin: curJ.comentarioAdmin || prevJ.comentarioAdmin || ''
+        }
       };
-      const key = item.justificacion.idJustificacion
-        ? `j:${item.justificacion.idJustificacion}`
-        : `u:${merged.idUsuario}|${merged.justificacion.motivo}|${(merged.justificacion.fecha || '').slice(0, 10)}`;
       outMap.set(key, merged);
     };
 
@@ -411,15 +503,24 @@ export const S = {
       fecha
     }),
 
-  // Puntos de Distribución / Oportunidades (sincronizado desde GET /puntos-venta sin provocar 404 en /prospectos)
+  // Prospectos de la BD (con fallback a puntos-venta si no hay)
   prospectos: async (q = {}) => {
+    try {
+      const resp = await api.get('prospectos', q);
+      const rows = list(resp);
+      if (Array.isArray(rows) && rows.length > 0) {
+        return dedupeBy(rows.map(p => normProspecto(p)), p => p.id ? `id:${p.id}` : `n:${p.nombre}`);
+      }
+    } catch (e) {
+      console.warn('Fallback a puntos-venta para prospectos:', e);
+    }
     const pdvs = list(await api.get('puntos-venta', q)).filter(p => String(p.tipo || '').toUpperCase().includes('DISTRIB'));
-    return pdvs.map(p => ({
+    return dedupeBy(pdvs.map(p => ({
       ...normProspecto({
         id: p.idPuntosVenta || p.id,
         nombre: p.puntoVenta || p.puntosVenta || p.nombre,
         direccion: p.direccion,
-        estado: p.estado === 'ACTIVO' ? 'CONVERTIDO' : (p.estado || 'NEGOCIACION'),
+        estado: p.estado === 'ACTIVO' ? 'CONVERTIDO' : (p.estado || 'EN_NEGOCIACION'),
         latitud: p.latitud,
         longitud: p.longitud,
         zona: p.distrito,
@@ -429,7 +530,11 @@ export const S = {
         notas: `Código PDV: ${p.codigo || '—'} · Correo promotor: ${p.correo_responsable || p.impulsador_correo || '—'}`
       }),
       _fromPdv: true
-    }));
+    })), p => p.id ? `id:${p.id}` : `n:${p.nombre}`);
+  },
+
+  cambiarEstadoProspecto: async (id, estado, motivo = null) => {
+    return api.put(`prospectos/${id}/estado`, { estado, motivo_descarte: motivo });
   },
 
   // Perfil y Fotos de Usuario (guarda en BD vía API en Render)

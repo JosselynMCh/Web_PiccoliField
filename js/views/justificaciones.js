@@ -35,10 +35,7 @@ function frame() {
   if (root.querySelector('#j-body')) return;
   root.innerHTML = `
     ${pageHeader('Justificaciones de Asistencia', 'Consulte todas las justificaciones registradas por los colaboradores (del día e históricas por usuario) y apruebe o rechace con comentario.',
-      `<div class="flex flex-wrap gap-2">
-        <button id="j-new" class="${btnPrimary}"><i class="fa-solid fa-plus"></i> Registrar justificación</button>
-        <button id="j-refresh" class="${btnGhost}"><i class="fa-solid fa-rotate"></i> Actualizar</button>
-      </div>`)}
+      `<button id="j-new" class="${btnPrimary}"><i class="fa-solid fa-plus"></i> Registrar justificación</button>`)}
     <div id="j-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4"></div>
     <div class="flex flex-wrap gap-2 mb-3">
       <input id="j-q" class="${inputCls} sm:w-60" placeholder="Buscar colaborador, motivo o sede...">
@@ -46,7 +43,6 @@ function frame() {
       <input id="j-fecha" type="date" class="${inputCls} sm:w-40">
       <button id="j-clear" class="${btnGhost}">Limpiar filtros</button>
     </div><div id="j-body"></div>`;
-  root.querySelector('#j-refresh').onclick = () => load();
   root.querySelector('#j-new').onclick = () => openNewModal();
   root.querySelector('#j-q').oninput = debounce(e => { filt.q = e.target.value.toLowerCase(); draw(); });
   root.querySelector('#j-estado').onchange = e => { filt.estado = e.target.value; draw(); };

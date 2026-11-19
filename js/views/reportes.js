@@ -5,7 +5,7 @@ let root, last = null;
 
 const REPORTS = {
   asistencia: { icon: 'fa-user-clock', title: 'Asistencia', desc: 'Marcaciones, estado, tardanza y ubicación', dateField: 'fecha',
-    fetch: async () => { const [a, b] = await Promise.all([S.asistColaboradores(), S.asistRecientes()]); const m = new Map(); [...b, ...a].forEach(r => m.set(`${r.idUsuario}|${r.fecha}|${r.tipo}`, r));
+    fetch: async () => { const [a, b] = await Promise.all([S.asistColaboradores(), S.asistRecientes()]); const m = new Map(); [...b, ...a].forEach(r => m.set(r.id ? `id:${r.id}` : `${r.idUsuario || r.nombre}|${dateOnly(r.fecha)}|${r.tipo}`, r));
       return [...m.values()].map(r => ({ colaborador: r.nombre, sede: r.sede, tipo: r.tipo, estado: r.estado, fecha_hora: fmtDateTime(r.fecha), minutos_tardanza: r.minutos, latitud: r.lat, longitud: r.lng, justificacion_estado: r.justificacion?.estado || '', justificacion_motivo: r.justificacion?.motivo || '', fecha: dateOnly(r.fecha) })); } },
   stock: { icon: 'fa-boxes-stacked', title: 'Stock y alertas', desc: 'Alertas de stock con severidad y estado', dateField: 'fecha_emision',
     fetch: async () => (await S.alertas()).map(a => ({ id: a.id, producto: a.producto, punto_venta: a.local, tipo: a.tipo, severidad: a.nivel, estado: a.estado, fecha_emision: fmtDate(a.fechaEmision), hora_emision: a.horaEmision ? fmtTime(a.horaEmision) : '—', fecha_atencion: a.fechaAtencion ? fmtDateTime(`${a.fechaAtencion} ${a.horaAtencion || ''}`.trim()) : '—', comentario: a.comentario || '—' })) },

@@ -31,7 +31,7 @@ async function load() {
 
 function frame() {
   if (root.querySelector('#in-body')) return;
-  root.innerHTML = `${pageHeader('Incidencias en Campo', 'Consulte incidencias reportadas por punto de venta, tipo y severidad; atienda o resuelva dejando comentarios de seguimiento.', `<button id="in-refresh" class="${btnGhost}"><i class="fa-solid fa-rotate"></i> Actualizar</button>`)}
+  root.innerHTML = `${pageHeader('Incidencias en Campo', 'Consulte incidencias reportadas por punto de venta, tipo y severidad; atienda o resuelva dejando comentarios de seguimiento.')}
     <div id="in-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4"></div>
     <div class="flex flex-wrap gap-2 mb-3">
       <input id="in-q" class="${inputCls} sm:w-52" placeholder="Buscar PDV, usuario o descripción...">
@@ -39,7 +39,6 @@ function frame() {
       <select id="in-sev" class="${inputCls} sm:w-36"><option value="">Toda severidad</option><option>ALTA</option><option>MEDIA</option><option>BAJA</option></select>
       <select id="in-est" class="${inputCls} sm:w-40"><option value="">Todos los estados</option>${ESTADOS.map(t => `<option value="${t}">${label(t)}</option>`).join('')}</select>
     </div><div id="in-body"></div>`;
-  root.querySelector('#in-refresh').onclick = () => load();
   root.querySelector('#in-q').oninput = debounce(e => { f.q = e.target.value.toLowerCase(); draw(); });
   root.querySelector('#in-tipo').onchange = e => { f.tipo = e.target.value; draw(); };
   root.querySelector('#in-sev').onchange = e => { f.sev = e.target.value; draw(); };

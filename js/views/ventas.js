@@ -29,8 +29,7 @@ function draw() {
   const conMeta = vend.filter(v => v.meta > 0);
   const cumplen = conMeta.filter(v => v.vendido >= v.meta).length;
   root.innerHTML = `
-    ${pageHeader('Ventas y Metas de Impulsadores', 'Monto vendido, ranking y avance de cada impulsador frente a su meta mensual, rendimiento histórico y reasignación de sede.',
-      `<button id="v-refresh" class="${btnGhost}"><i class="fa-solid fa-rotate"></i> Actualizar</button>`)}
+    ${pageHeader('Ventas y Metas de Impulsadores', 'Monto vendido, ranking y avance de cada impulsador frente a su meta mensual, rendimiento histórico y reasignación de sede.')}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
       ${kpi('Monto total vendido', money(root._monto), 'fa-sack-dollar', 'text-emerald-600')}
       ${kpi('Unidades vendidas', totalUds, 'fa-bottle-water', 'text-brand-gold')}
@@ -38,7 +37,6 @@ function draw() {
       ${kpi('Cumplen meta', `${cumplen}/${conMeta.length}`, 'fa-bullseye', 'text-emerald-600')}
     </div>
     <div id="v-body"></div>`;
-  root.querySelector('#v-refresh').onclick = () => load();
   drawRanking();
 }
 

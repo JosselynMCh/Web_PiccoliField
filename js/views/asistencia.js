@@ -29,8 +29,7 @@ async function load(silent) {
 function frame() {
   if (root.querySelector('#as-body')) return;
   root.innerHTML = `
-    ${pageHeader('Asistencia en Vivo', 'Personal con estado (puntual, tardanza, falta), hora y ubicación de la marcación. Filtros por zona, fecha, estado y persona.',
-      `<button id="as-refresh" class="${btnGhost}"><i class="fa-solid fa-rotate"></i> Actualizar</button>`)}
+    ${pageHeader('Asistencia en Vivo', 'Personal con estado (puntual, tardanza, falta), hora y ubicación de la marcación. Filtros por zona, fecha, estado y persona.')}
     <div id="as-kpis" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4"></div>
     <div class="flex flex-wrap gap-2 mb-3 items-center">
       <div class="inline-flex bg-stone-100 rounded-xl p-1 text-xs font-bold" id="as-tabs">
@@ -45,7 +44,6 @@ function frame() {
       <button id="f-clear" class="${btnGhost}">Limpiar</button>
     </div>
     <div id="as-body"></div>`;
-  root.querySelector('#as-refresh').onclick = () => load();
   root.querySelector('#as-tabs').onclick = (e) => { const b = e.target.closest('[data-tab]'); if (b) { filt.tab = b.dataset.tab; draw(); } };
   root.querySelector('#f-q').oninput = debounce((e) => { filt.q = e.target.value.toLowerCase(); draw(); });
   root.querySelector('#f-estado').onchange = (e) => { filt.estado = e.target.value; draw(); };

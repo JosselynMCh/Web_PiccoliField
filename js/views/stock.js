@@ -27,8 +27,7 @@ async function load() {
 function frame() {
   if (root.querySelector('#st-body')) return;
   root.innerHTML = `
-    ${pageHeader('Stock y Alertas con Evidencia', 'Alertas de stock bajo y quiebre con severidad, evidencia fotográfica (marca de agua y hash SHA-256) y atención con comentario.',
-      `<button id="st-refresh" class="${btnGhost}"><i class="fa-solid fa-rotate"></i> Actualizar</button>`)}
+    ${pageHeader('Stock y Alertas con Evidencia', 'Alertas de stock bajo y quiebre con severidad, evidencia fotográfica (marca de agua y hash SHA-256) y atención con comentario.')}
     <div id="st-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4"></div>
     <div id="st-rank" class="mb-4"></div>
     <div class="flex flex-wrap gap-2 mb-3">
@@ -36,7 +35,6 @@ function frame() {
       <select id="st-estado" class="${inputCls} sm:w-40"><option value="">Todos los estados</option><option>PENDIENTE</option><option>ATENDIDA</option><option>IGNORADA</option></select>
       <select id="st-nivel" class="${inputCls} sm:w-40"><option value="">Toda severidad</option><option>ALTA</option><option>MEDIA</option><option>BAJA</option></select>
     </div><div id="st-body"></div>`;
-  root.querySelector('#st-refresh').onclick = () => load();
   root.querySelector('#st-q').oninput = debounce(e => { f.q = e.target.value.toLowerCase(); draw(); });
   root.querySelector('#st-estado').onchange = e => { f.estado = e.target.value; draw(); };
   root.querySelector('#st-nivel').onchange = e => { f.nivel = e.target.value; draw(); };

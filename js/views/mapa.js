@@ -41,11 +41,10 @@ function draw(d, keepView) {
   const zonas = coverage(pdv, pro);
   const sinPres = zonas.filter(z => z.pct < 100);
   if (!root.querySelector('#mp-map')) {
-    root.innerHTML = `${pageHeader('Mapa General', 'PDV por tipo y estado, prospectos por etapa, marcaciones de asistencia y zonas sin presencia (análisis de cobertura calculado con datos reales).', `<button id="mp-refresh" class="${btnGhost}"><i class="fa-solid fa-rotate"></i> Actualizar</button>`)}
+    root.innerHTML = `${pageHeader('Mapa General', 'PDV por tipo y estado, prospectos por etapa, marcaciones de asistencia y zonas sin presencia (análisis de cobertura calculado con datos reales).')}
       <div id="mp-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4"></div>
       <div class="grid lg:grid-cols-4 gap-4"><div class="lg:col-span-3 bg-white rounded-2xl border border-stone-200 overflow-hidden"><div id="mp-map" class="h-[380px] sm:h-[600px]"></div></div>
       <div id="mp-side" class="bg-white rounded-2xl border border-stone-200 p-4 max-h-[600px] overflow-y-auto"></div></div>`;
-    root.querySelector('#mp-refresh').onclick = () => load(true);
   }
   root.querySelector('#mp-kpis').innerHTML = kpi('PDV en mapa', pdv.filter(p => validCoord(p.lat, p.lng)).length, 'fa-store', 'text-brand-gold', `${pdv.length} totales`) +
     kpi('Prospectos en mapa', pro.filter(p => validCoord(p.lat, p.lng)).length, 'fa-shop', 'text-sky-600', `${pro.length} totales`) +
